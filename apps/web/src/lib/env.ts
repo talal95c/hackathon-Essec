@@ -37,6 +37,26 @@ const envSchema = z.object({
     (v) => (v === "" ? undefined : v),
     z.string().optional(),
   ),
+
+  // Registre de confirmation — L1 Avalanche « pir » locale (7810) ou Fuji C-Chain (43113).
+  // Voir docs/avalanche-l1.md. CHAIN_RPC_URL vide = chaîne non configurée (UI dégradée).
+  CHAIN_RPC_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
+  CHAIN_ID: z.coerce.number().int().positive().default(7810),
+  EXPLORER_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
+  AUDITOR_ADDRESS: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z
+      .string()
+      .regex(/^0x[0-9a-fA-F]{40}$/)
+      .optional(),
+  ),
+  NEXT_PUBLIC_INTENT_REGISTRY_ADDRESS: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z
+      .string()
+      .regex(/^0x[0-9a-fA-F]{40}$/)
+      .optional(),
+  ),
 });
 
 export const env = envSchema.parse({
@@ -49,6 +69,11 @@ export const env = envSchema.parse({
   SEPOLIA_RPC: process.env.SEPOLIA_RPC,
   NEXT_PUBLIC_MOCK_USDT_ADDRESS: process.env.NEXT_PUBLIC_MOCK_USDT_ADDRESS,
   NEXT_PUBLIC_ESCROW_FACTORY_ADDRESS: process.env.NEXT_PUBLIC_ESCROW_FACTORY_ADDRESS,
+  CHAIN_RPC_URL: process.env.CHAIN_RPC_URL,
+  CHAIN_ID: process.env.CHAIN_ID,
+  EXPLORER_URL: process.env.EXPLORER_URL,
+  AUDITOR_ADDRESS: process.env.AUDITOR_ADDRESS,
+  NEXT_PUBLIC_INTENT_REGISTRY_ADDRESS: process.env.NEXT_PUBLIC_INTENT_REGISTRY_ADDRESS,
 });
 
 export const HAS_ANTHROPIC_KEY = Boolean(env.ANTHROPIC_API_KEY);

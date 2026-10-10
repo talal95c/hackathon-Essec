@@ -6,7 +6,7 @@
  */
 import { ORG_ARBITER_ID, ORG_IMPORTER_ID, ORG_SUPPLIER_ID } from "@/lib/db/seed";
 
-export type FakeUserId = "chinedu" | "chen" | "silkpay-arbiter";
+export type FakeUserId = "chinedu" | "chen" | "pir-arbiter";
 
 export type FakeUser = {
   id: FakeUserId;
@@ -40,11 +40,11 @@ export const FAKE_USERS: Record<FakeUserId, FakeUser> = {
     org_id: ORG_SUPPLIER_ID,
     preferred_locale: "zh",
   },
-  "silkpay-arbiter": {
-    id: "silkpay-arbiter",
-    full_name: "Silkpay Compliance Officer",
-    display_name: "Silkpay Officer",
-    email: "compliance@silkpay.finance",
+  "pir-arbiter": {
+    id: "pir-arbiter",
+    full_name: "PIR Compliance Officer",
+    display_name: "PIR Officer",
+    email: "compliance@pir.finance",
     avatar_initials: "SC",
     role: "arbiter",
     org_id: ORG_ARBITER_ID,
@@ -55,5 +55,5 @@ export const FAKE_USERS: Record<FakeUserId, FakeUser> = {
 export const DEFAULT_USER_ID: FakeUserId = "chinedu";
 
 export function isFakeUserId(value: unknown): value is FakeUserId {
-  return value === "chinedu" || value === "chen" || value === "silkpay-arbiter";
+  return value === "chinedu" || value === "chen" || value === "pir-arbiter";
 }

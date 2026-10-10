@@ -53,7 +53,7 @@ export const seedOrganizations: Organization[] = [
     clerk_org_id: null,
     type: "arbiter",
     country_code: "MU",
-    legal_name: "Silkpay Compliance",
+    legal_name: "PIR Compliance",
     cac_number: null,
     business_license: null,
     kyb_status: "approved",

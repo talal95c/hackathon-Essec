@@ -1,108 +1,102 @@
-# Comparaison des trois PRD et arbitrages de fusion
+# Comparaison des quatre PRD et arbitrages de fusion
 
-> 10 octobre 2026 · Secure Horizons, Track 1 · Résultat de la fusion : [`docs/prd-final.md`](./prd-final.md)
-> Les deux PRD reçus sont versionnés tels quels dans [`docs/prd-sources/`](./prd-sources/).
+> 10 octobre 2026 · Secure Horizons, ESSEC · Résultat : [`prd-final.md`](./prd-final.md)
+> A, B et D sont conservés tels quels dans [`prd-sources/`](./prd-sources/) ; C reste dans [`prd.md`](./prd.md).
 
-| Code  | PRD                                                                            | Auteur      | Taille                | En une ligne                                                                                                                                 |
-| ----- | ------------------------------------------------------------------------------ | ----------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A** | _Risk-Aware Payment Router_ ([source](./prd-sources/prd-risk-aware-router.md)) | non indiqué | ≈ 2 600 mots, anglais | Routeur africain + 3 agents IA d'investigation ; idée forte : **séparer le risque de fraude du risque de route**                             |
-| **B** | _L'aiguilleur_ ([source](./prd-sources/prd-aiguilleur-oscar.md))               | Oscar Hu    | ≈ 7 000 mots          | Routeur Lagos – Accra – Abidjan, moteur de risque géographique, réponse graduée, globe 3D en direct ; **le plus complet et le mieux sourcé** |
-| **C** | _Payment Integrity Router_ v1.1 ([`docs/prd.md`](./prd.md))                    | nous        | ≈ 8 200 mots          | Routeur FR → CN centré sur l'**intégrité du paiement** : intention signée, vérification hors bande, Jev/Mistral, registre Avalanche          |
-
----
-
-## 1. Note par critère du jury (grille Track 1)
-
-Notes de 1 à 5, _(analyse)_ : jugement de lecture, pas une mesure.
-
-| Critère (poids)                    |    A    |    B    |    C    | Pourquoi                                                                                                                                                                                                                                                                                                                             |
-| ---------------------------------- | :-----: | :-----: | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Efficacité de détection (30 %)     |    2    |  **5**  |    3    | B : 6 typologies sourcées, signaux géographiques, protocole graine A / graine B, 3 références, gain de la géographie isolé. C : BEC + substitution en transit très solides, mais côté payeur seulement, pas de réseau de mules (zone 1 de la consigne), jeu de 300 scénarios moins rigoureux. A : aucun chiffre ni protocole.        |
-| Qualité de la réponse (20 %)       |    3    |  **5**  |    4    | B : 4 niveaux, coupe-circuit régional, déclaration de soupçon avec délais par pays, qui est prévenu, interdiction de prévenir le client. C : vérification hors bande, time-lock, double contrôle, kill switch, révocation on-chain, le payeur tranche — mais pas d'analyste ni de déclaration. A : permettre / vérifier / suspendre. |
-| Faisabilité et intégration (20 %)  |    3    |    3    |    3    | B : planning à l'heure près et rôles, mais repart de zéro (FastAPI) en ignorant la base de code déjà dans le dépôt, 5 rôles pour 4 personnes. C : réutilise la base, charge chiffrée en h·p, chemin critique — mais 33 P0 ≈ 134 h·p pour ≈ 120 h·p disponibles **et suppose 36 h**. A : simple mais générique.                       |
-| Conformité et explicabilité (15 %) |    2    |  **5**  |    4    | B : tableau par pays (GAFI R16, NFIU, FIC, CENTIF, lois données), décisions rejouables. C : journal hash-chaîné, registre de confirmation, clé auditeur eERC ; cadre réglementaire peu détaillé dans le PRD (il est dans `projet.md`).                                                                                               |
-| Pitch et démo (15 %)               |    2    |  **5**  |    4    | B : globe où l'on voit le paiement voyager et la fraude s'allumer, 7 temps. C : script minuté, preuve sur l'explorer, mais un tableau de bord plutôt qu'une scène.                                                                                                                                                                   |
-| **Score pondéré**                  | **2,4** | **4,6** | **3,5** |                                                                                                                                                                                                                                                                                                                                      |
-
-Hors grille, la **profondeur de sécurité** est l'atout de C : c'est le seul PRD qui empêche structurellement la substitution de bénéficiaire (intention signée vérifiée par chaque rail) et qui protège _avant_ la signature. B et A détectent ; C rend une classe d'attaque impossible.
+| Code  | PRD                                                                            | Auteur      | Langue                 | En une ligne                                                                                                                       |
+| ----- | ------------------------------------------------------------------------------ | ----------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **A** | _Risk-Aware Payment Router_ ([source](./prd-sources/prd-risk-aware-router.md)) | non indiqué | anglais                | Routeur africain et agents IA ; idée forte : **séparer le risque de fraude du risque de route**.                                   |
+| **B** | _L'aiguilleur_ ([source](./prd-sources/prd-aiguilleur-oscar.md))               | Oscar Hu    | français               | Lagos – Accra – Abidjan, terrain, détection géographique, réponse graduée et globe 3D.                                             |
+| **C** | _Payment Integrity Router_ v1.1 ([`prd.md`](./prd.md))                         | équipe      | français               | Intégrité : intention signée, vérification hors bande, Jev/Mistral et code existant.                                               |
+| **D** | _L'Aiguilleur_ v4 ([source](./prd-sources/prd-aiguilleur-youssef.md))          | Youssef     | anglais, ≈ 19 700 mots | Architecture normes → risque → coût, profils de juridiction, preuves on-chain EIP-712 et retours de deux sessions mentor intégrés. |
 
 ---
 
-## 2. Le meilleur de chaque PRD (repris dans le PRD final)
+## 1. Notes par critère du jury
+
+Notes de 1 à 5, _(analyse)_ : jugement de lecture, pas une mesure. Pondérations : détection 30 %, réponse 20 %, faisabilité 20 %, conformité 15 %, pitch 15 %.
+
+| Critère             |    A    |    B    |    C    |    D     | Pourquoi                                                                                                                                                                                                               |
+| ------------------- | :-----: | :-----: | :-----: | :------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Détection (30 %)    |    2    |  **5**  |    3    |  **5**   | B : typologies, géographie, graines A/B, références et ablations. C : BEC et substitution solides, mais vue payeur. D : jeu étiqueté, ablations et signaux de normes, notamment R1.                                    |
+| Réponse (20 %)      |    3    |  **5**  |    4    |  **5**   | B : quatre niveaux, coupe-circuit et playbook. C : vérification, time-lock et révocation, sans console analyste. D : séquestre, attestations, révocation, remboursement et playbook.                                   |
+| Faisabilité (20 %)  |    3    |    3    |    3    |    3     | A reste générique. B repart de zéro. C réutilise le dépôt mais son estimation P0 excède le temps prévu. D est bien phasé et time-boxé, mais lourd pour ≈ 21 h.                                                         |
+| Conformité (15 %)   |    2    |  **5**  |    4    |  **5**   | B détaille les pays et les décisions rejouables. C a la chaîne et l'auditeur, mais peu de droit dans le PRD. D relie profils par juridiction, MiCA, DAC8, VoP et eERC avec clé d'auditeur.                             |
+| Pitch / démo (15 %) |    2    |  **5**  |    4    |    4     | B a un globe en direct et un scénario visuel. C a le script et l'explorer, mais une scène moins visuelle. D a une carte de preuves et des événements on-chain, mais pas de visualisation live et un script de 4–5 min. |
+| **Score pondéré**   | **2,4** | **4,6** | **3,5** | **4,45** | Notes D établies pour cette comparaison.                                                                                                                                                                               |
+
+---
+
+## 2. Le meilleur de chaque PRD
 
 ### A — Risk-Aware Payment Router
 
-1. **Deux risques séparés** : le risque de fraude de la transaction décide si le paiement part ; le risque de route ne sert qu'à choisir le rail. « Changer de route ne résout jamais une fraude. » → principe directeur n° 2 du PRD final, et correction d'une faille de B (voir §4).
-2. **Visibilité fragmentée** comme cœur du problème : chaque institution ne voit qu'un tronçon ; la corrélation de signaux pseudonymisés entre institutions est ce qui détecte les mules. → argument de la « vue complète ».
-3. **Échec sûr** : la panne d'un agent n'autorise jamais un paiement ; un contrôle impossible fait échouer le paiement suspect. (Convergent avec C, NF-2.)
-4. **Les textes du paiement sont des données, jamais des instructions** (injection dans les métadonnées). → exigence NF du PRD final.
-5. **Risque d'accessibilité** (le bénéficiaire peut-il retirer l'argent ?). Convergent avec B.
-6. **Accroche** : _« La route la plus intelligente pour votre argent est celle qui arrive à bon port. »_
+- Deux risques séparés : le risque de fraude décide si le paiement part ; le risque de route sert uniquement à choisir le rail. Changer de route ne corrige jamais une fraude.
+- La fragmentation entre institutions explique l'intérêt d'une vue agrégée.
+- À laisser de côté : l'habillage multi-agents sans protocole de mesure ni intégration au terrain déjà décrit par B et C.
 
-Écarté : l'habillage « multi-agents » (trois agents LLM) — risque d'« IA de façade » devant un jury fintech ; dans le PRD final, les trois rôles sont tenus par le moteur de risque (détection), l'analyse de graphe (investigation inter-réseaux) et Mistral + moteur de règles (explication et décision).
+### B — L'Aiguilleur (Oscar)
 
-### B — L'aiguilleur (Oscar)
-
-1. **Problème terrain chiffré et sourcé** dans le corridor (Banque mondiale 8,46 %, Swift 25 % < 1 h, îlots PAPSS / PI-SPI, plafonds, zone franc, fraude NIBSS / BoG / PLCC). → repris intégralement.
-2. **Persona analyste fraude et conformité** comme utilisateur quotidien, et la fintech émettrice comme client payant. → colle à la zone 1 de la consigne et au critère « utile à l'analyste ».
-3. **KPI reliés aux critères du jury**. → repris, complétés par les KPI d'intégrité de C.
-4. **Globe en direct** piloté par un flux d'événements SSE (le globe ne calcule rien) + fil texte de secours. → repris, réduit en P0 aux couches indispensables.
-5. **Spécification du routage** : graphe institution × région, Yen k = 5, score unique, une seule route renvoyée avec sa raison, découpage par flot à coût minimal, devis 600 s, règles géographiques (parité FCFA, fuseaux, règlement PAPSS 11 h UTC, PAPSS fermé vers la Côte d'Ivoire).
-6. **Moteur de risque** : 6 typologies sourcées, signaux géographiques (déplacement impossible > 900 km/h…), règles + graphe + anomalies + modèle supervisé, seuils 40 / 70 / 90, 3 signaux les plus forts par alerte.
-7. **Plan de réponse** : 4 niveaux, coupe-circuit régional (−20 points, 24 h), déclaration de soupçon pré-remplie avec délais NFIU / FIC / CENTIF, interdiction de prévenir le client. → c'est le livrable « response playbook » exigé.
-8. **Format pivot pacs.008 avec UETR**, API REST claire, paramètres de simulation des 7 rails sourcés, PaySim + AMLworld.
-9. **Protocole d'évaluation** : graine A pour régler, graine B pour mesurer, 3 références dont « institution isolée », gain de la géographie à faux positifs égaux.
-10. **Conformité par pays, NIST CSF, MITRE ATT&CK, questions du jury, risques techniques** (react-globe.gl sans SSR, entiers pour le flot, robinet Fuji).
-
-Écarté ou corrigé : la pile repartant de zéro (Python seul + SQLite) ; le terme de fraude **dans** le score de route (ρ·R) ; LLM en P2 seulement ; journal sur Fuji sans intention signée ; 5 rôles pour 4.
+- Terrain ouest-africain documenté, analyste fraude comme utilisateur, KPI liés aux critères, typologies, données synthétiques, graines A/B, références et gain de la géographie isolé.
+- Réponse à quatre niveaux, coupe-circuit régional, playbook, déclaration préremplie et qui-notifier-par-pays.
+- Globe piloté par le flux d'événements, avec fil texte de secours ; sept rails et paramètres de simulation.
+- À corriger : son terme de fraude dans le score de route ; le routeur ne doit pas rendre un paiement suspect éligible en changeant de rail.
 
 ### C — Payment Integrity Router (notre PRD)
 
-1. **Intention signée = source de vérité** : `intent_hash` + nonce portés par chaque jambe ; chaque connecteur refuse une jambe qui ne correspond pas → la **substitution en transit est impossible**, pas seulement détectée.
-2. **Protection avant signature** : registre de bénéficiaires vérifiés, vérification hors bande sur un contact déjà connu, time-lock proportionnel, double contrôle au-delà d'un seuil, signature bloquée (pas seulement avertie).
-3. **Le payeur dans la boucle** par un canal hors bande (jamais l'e-mail, qui recrée la faille BEC) — téléphone simulé visible en démo.
-4. **Jev (Système 1) + Mistral (Système 2)** avec les contraintes réelles apprises sur LawHack : une question par appel, appels en parallèle, 2 points d'appel, cache, quota ; Mistral explique et ne décide jamais ; désaccord classifieur / Jev → retenue.
-5. **Mode dégradé plus strict, jamais plus laxiste** ; budget d'alertes qui ne lève jamais une règle.
-6. **Journal hash-chaîné** et **registre de confirmation Avalanche** (`IntentRegistry` : publication, révocation, `isConfirmed`) vérifiable par un tiers ; déjà codé sur les branches `intent-registry` et `core-package`, avec la L1 locale et l'eERC (partiel).
-7. **Critères d'acceptation testables**, NF chiffrées, **charge en h·p, chemin critique, kit de démarrage, autocritique**.
-8. **Réutilisation de la base de code** déjà copiée dans le dépôt (Next.js, Supabase, SOR Python, contrats Foundry).
+- `PaymentIntent` signée, `intent_hash` contrôlé par chaque connecteur, nonce et révocation : une substitution en transit est refusée plutôt que seulement détectée.
+- Bénéficiaires vérifiés, hors bande sur un contact connu, double contrôle, mode dégradé plus strict et humain dans la boucle.
+- Jev (Système 1) pour deux questions, Mistral (Système 2) pour expliquer sans agir ; journal hash-chaîné, `IntentRegistry` existant, `packages/core`, base et contrats déjà présents.
+- À déplacer ou corriger : corridor France–Chine, estimation P0 excessive et quelques fonctionnalités hors démo.
 
-Écarté ou déplacé : le corridor FR → CN ; 33 P0 ; prédicteurs en ligne (bandit), VC, Travel Rule, honeytokens, fiscalité, sandbox Airwallex, mode ombre → P2 ; ajout d'un pays en démo → P1.
+### D — L'Aiguilleur (Youssef)
+
+**À reprendre :**
+
+- Ordre de décision **normes → risque → coût → commit → action** ; un profil par pays et un pack de corridor dans un fichier.
+- Les normes deviennent aussi des signaux de fraude R1–R4. R1 cible les recettes d'exportation qui n'arrivent pas à la banque désignée.
+- VoP s'arrête à SEPA. Vérification SIM-swap sur le contact connu avant la demande hors bande (mock CAMARA).
+- `PaymentCommitment`, `VerificationAttestation` et `Revocation` EIP-712, vérifiés on-chain ; séquestre dont `release` exige `CONFIRMED`.
+- Scène 2b : substitution et rejeu refusés par le connecteur ou revert on-chain. Modèle eERC avec modes A/B et modèle de confiance explicite ; Chainlist, vérification du chain-ID et quorum à deux fournisseurs.
+- Fiscalité informative seulement ; séparation System 1/System 2 ; protection de nos propres agents contre l'injection de prompt. La carte de preuves relie attente du mentor, scène et événement on-chain. Les retours de deux sessions mentor sont intégrés.
+
+**À écarter ou corriger :**
+
+- Longueur et anglais ; aucune visualisation en direct ; P0 trop lourd pour ≈ 21 h.
+- La dépendance au mentor pour la L1 ; en mode A, les montants restent publics pendant le séquestre.
+- Q5 sur les recettes d'exportation via VASP reste non résolue ; seuils encore provisoires.
+- D parle d'un « Track 3 angle ». `CONSIGNE.md` nomme **Track 2 — AI for Security & Secure AI: Defenders Augmented** : corriger le numéro et conserver cette question ouverte jusqu'à validation du positionnement.
 
 ---
 
 ## 3. Contradictions et arbitrages
 
-| Sujet                 | A                         | B                                    | C                                  | **Décision du PRD final**                                                                                                                                                        | Pourquoi                                                                                                                                                                                                                                  |
-| --------------------- | ------------------------- | ------------------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Corridor              | Afrique, 2 pays           | Lagos – Accra – Abidjan              | FR → CN                            | **Lagos – Accra – Abidjan**                                                                                                                                                      | 2 PRD sur 3, données de B sourcées pays par pays, les îlots PAPSS / PI-SPI donnent une vraie histoire de routage, la base de code vise déjà Lagos. Le faux fournisseur de C se transpose tel quel (PME de Lagos → fournisseur d'Abidjan). |
-| Durée du build        | 36 h                      | sam. 17 h → gel dim. 12 h, jury 13 h | 36 h                               | **Planning de B (≈ 19 h)**                                                                                                                                                       | B est le seul à donner l'agenda à l'heure près (point d'étape 18 h 30, atelier pitch 10 h). Si l'équipe confirme 36 h, les P1 remontent. **À confirmer immédiatement.**                                                                   |
-| Fraude et route       | séparés                   | fraude dans le score (ρ·R)           | garde avant rail                   | **Séparés** : le niveau de fraude décide de l'éligibilité et de l'action ; le score de route n'a qu'un terme de risque _opérationnel_ du rail                                    | Avec ρ·R, un paiement frauduleux peut « passer » par une route au score bas : faille logique de B que A nomme explicitement.                                                                                                              |
-| Sécurité              | détection                 | détection + réponse                  | intégrité + détection + humain     | **Les trois couches** : intégrité (C) → risque (B) → réponse graduée (B + C)                                                                                                     | Couvre détection 30 % _et_ réponse 20 %.                                                                                                                                                                                                  |
-| Humain dans la boucle | « supervision »           | analyste                             | payeur                             | **Les deux** : le payeur confirme hors bande (niveaux moyen / élevé) ; l'analyste libère, bloque, déclare                                                                        | Répond à « si votre modèle se trompe, qui est responsable ? ».                                                                                                                                                                            |
-| IA générative         | 3 agents LLM              | résumé LLM en P2                     | Jev + Mistral en P0                | **Jev P0 réduit à 2 questions à la signature ; Mistral P0 pour l'explication et le résumé de dossier, avec repli**                                                               | Les clés existent ; l'IA juge la sémantique d'une facture, ce que les règles ne savent pas faire ; elle ne décide jamais.                                                                                                                 |
-| Chaîne                | option, C-Chain           | Fuji : séquestre + journal           | L1 PIR dédiée, repli Fuji, eERC    | **`IntentRegistry` P0 (déjà codé) : intentions, révocations, empreintes de décisions ; L1 PIR si opérationnelle à dim. 0 h, sinon Fuji ; séquestre on-chain P1 ; eERC P2**       | Garde l'avis du mentor sans le mettre sur le chemin critique.                                                                                                                                                                             |
-| Pile                  | React + FastAPI           | Next.js + FastAPI                    | Next.js + Supabase + SOR existants | **Base de code existante** : Next.js (console, globe, signature) + services Python FastAPI (routage, risque, simulateur, évaluation, à côté du SOR) + `packages/core` + Supabase | Convergence de B et C ; ne réécrit pas ce qui existe.                                                                                                                                                                                     |
-| Optimiseur            | NetworkX                  | Yen + OR-Tools                       | CVXPY                              | **Yen (networkx) pour les chemins ; CVXPY existant pour le découpage**                                                                                                           | Évite une dépendance de plus ; OR-Tools reste le repli.                                                                                                                                                                                   |
-| Nombre de P0          | 8 « Must »                | 9 + globe                            | 33                                 | **14 modules P0, ≈ 55 h·p grâce à la base existante**, ordre de coupe écrit                                                                                                      | Ce qui tient en ≈ 19 h à 4.                                                                                                                                                                                                               |
-| Nom                   | Risk-Aware Payment Router | L'aiguilleur                         | PIR (nom de travail)               | **Ouvert** ; code et dépôt restent `PIR`                                                                                                                                         | Proposition : « L'aiguilleur » à l'oral (parlant en français), PIR dans le code.                                                                                                                                                          |
+| Sujet                 | A                         | B                                | C                                 | D                                             | Décision v3.0                                                                                                                                                 |
+| --------------------- | ------------------------- | -------------------------------- | --------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Corridor              | Afrique, deux pays        | Lagos – Accra – Abidjan          | France → Chine                    | France → Ghana + packs                        | **France → Ghana** pour la démo ; pack 2 Lagos → Accra ; pack 3 Paris → Abidjan sur papier. Chine rejetée.                                                    |
+| Ordre de décision     | Séparer les risques       | Fraude incluse au score de route | Garde avant rail                  | Normes → risque → coût → commit → action      | Normes et risque filtrent d'abord ; le score S de routage ne contient jamais le risque de fraude.                                                             |
+| Risque fraude / route | Séparés                   | Confondus dans `ρ·R`             | Intégrité puis risque             | Risque filtre les routes conformes            | Séparation A conservée ; filtres B/D et intégrité C composent la décision.                                                                                    |
+| IA                    | Trois agents              | LLM secondaire                   | Jev + Mistral                     | System 1 / System 2, défense des agents       | Jev : deux questions à la signature ; Mistral : dossier et explication, jamais une action. Le Track 2 de CONSIGNE reste à valider.                            |
+| Intention / preuve    | Peu détaillé              | Journal et chaîne                | `IntentRegistry`, `PaymentIntent` | EIP-712 : commitment, attestation, révocation | `IntentRegistry` conservé et étendu aux trois types signés ; connecteur contrôle `intent_hash`.                                                               |
+| Séquestre             | —                         | Réponse graduée                  | `TradeEscrow` déjà présent        | Mode A public, `release` exige `CONFIRMED`    | Mode A P0 ; réutilisation ou remplacement de `TradeEscrow` reste au propriétaire chaîne. Mode B P2.                                                           |
+| Chaîne                | C-Chain                   | Fuji                             | L1 PIR, repli Fuji                | L1 dédiée si possible, Fuji P0 chez D         | L1 PIR si opérationnelle dimanche 0 h, sinon Fuji C-Chain ; exploration mentor sur L1, Snowtrace sur Fuji.                                                    |
+| Nombre de P0          | Huit « Must »             | Neuf + globe                     | Quatorze                          | Modules nombreux et phases                    | Quatorze modules, ≈ 57 h·p pour ≈ 56 disponibles : au seuil, l'ordre de coupe s'applique dès le checkpoint.                                                   |
+| Build                 | 36 h                      | Sam. 17 h → dim. 12 h            | 36 h                              | ≈ 21 h, à confirmer                           | Garder le calendrier v2.0 : ≈ 19 h de build utile ; ≈ 21 h selon D reste à confirmer.                                                                         |
+| Nom                   | Risk-Aware Payment Router | L'Aiguilleur                     | PIR, nom de travail               | L'Aiguilleur                                  | Proposer **L'Aiguilleur** à l'oral ; garder `PIR` dans le code.                                                                                               |
+| v2.0 → v3.0           | —                         | Triangle ouest-africain          | France → Chine                    | Intercontinental, normes par pays             | Le triangle Lagos–Accra–Abidjan cède la place à **France → Ghana et aux packs**, à la demande du mentor pour une démo intercontinentale avec normes par pays. |
 
 ---
 
-## 4. Ce que la fusion change par rapport à notre PRD
+## 4. Ce que la fusion change par rapport à notre PRD (C)
 
-**On gagne** : un terrain réel chiffré par pays ; la détection de réseaux de mules et la vue complète (zone 1, la plus notée) ; un analyste et une console ; un plan de réponse qui coche le livrable exigé ; un protocole d'évaluation rigoureux ; une conformité par pays prête pour la slide ; une démo visuelle (globe) ; un planning à l'heure.
+**On ajoute** : le terrain africain, les signaux géographiques et les mules de B ; les normes intercontinentales, le moteur de décision et la preuve on-chain de D ; les rails par corridor, l'évaluation et les ablations. **On garde** l'intention signée, les refus `intent_hash`, Jev/Mistral, les connecteurs et la base de code de C ; la séparation des risques de A. Le globe de B reste une présentation de la route et des événements, pas un moteur de décision.
 
-**On garde** : tout le cœur intégrité (intention signée, `intent_hash` vérifié par chaque rail, vérification hors bande, time-lock, double contrôle, payeur dans la boucle, mode dégradé strict, journal hash-chaîné, registre Avalanche, Jev / Mistral).
-
-**On perd** : le corridor FR → CN et le chiffre d'accroche BEC américain (remplacé par les typologies régionales : faux fournisseur classé par le GIABA, fraudes NIBSS / BoG / PLCC — le chiffre FBI IC3 reste citable comme ordre de grandeur mondial) ; la scène « provisionner vendredi, régler lundi » (remplacée par le règlement PAPSS 11 h UTC et les rails instantanés) ; l'ajout d'un pays en direct passe en P1.
-
-**Ce qu'aucun des trois ne règle** _(analyse)_ : (1) pourquoi des institutions concurrentes partageraient leurs signaux — réponse proposée : métadonnées pseudonymisées seulement, bénéfice commun, mais non démontré ; (2) la liquidité des agents par région n'a aucune donnée publique (hypothèse simulée, à dire) ; (3) la vérification d'un `intent_hash` par un rail réel suppose son intégration — seul le connecteur simulé le fait en démo.
+**On perd ou reporte** : le corridor France → Chine et le triangle comme scénario principal ; les autres pays que les packs retenus ; la L1 consortium, le mode B, le guardian et les extensions P2. Le pack 2, au lieu d'être le fil rouge, devient une extension P1.
 
 ---
 
 ## 5. Verdict
 
-**B est la meilleure base** (4,6 / 5 sur la grille) et sert de squelette au PRD final ; **C apporte la différenciation** que ni A ni B n'ont — rendre la substitution impossible au lieu de la détecter — et la discipline d'ingénierie (critères d'acceptation, charge, chemin critique) ; **A apporte un principe** qui corrige une faille de B. Le PRD final ([`prd-final.md`](./prd-final.md)) suit le plan de B, insère la couche intégrité de C entre la demande et le routage, applique la séparation des risques de A, et ramène le périmètre P0 à ce qui tient d'ici le gel de dimanche 12 h.
+**B et D sont co-bases** : 4,6 et 4,45 sont presque à égalité ; l'alignement de D sur les retours du mentor l'emporte sur l'écart de 0,15. D fournit l'architecture de décision et la preuve on-chain ; B, le terrain africain, la détection et les visuels ; C, l'intention signée, Jev/Mistral et le code existant ; A, la séparation des risques. Le PRD final v3.0 combine ces apports sans confondre fraude et coût de route.
 
-**Trois décisions à valider par l'équipe maintenant** : (1) corridor Afrique de l'Ouest ; (2) durée réelle (≈ 19 h ou 36 h) ; (3) nom à l'oral.
+**Trois décisions d'équipe** : (1) corridor principal France → Ghana et pack 2 Lagos → Accra ; (2) durée réelle du build ; (3) proposer « L'Aiguilleur », tout en gardant `PIR` dans le code.

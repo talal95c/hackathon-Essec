@@ -1,0 +1,19 @@
+{
+  "name": "@pir/eerc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Jambe eERC (Encrypted ERC, mode Converter) de PIR : contrats Foundry + scripts de preuve zk côté client (test uniquement).",
+  "scripts": {
+    "test": "forge test",
+    "eerc:register": "node scripts/eerc-register.mjs",
+    "eerc:deposit": "node scripts/eerc-deposit.mjs"
+  },
+  "dependencies": {
+    "@zk-kit/baby-jubjub": "^1.0.3",
+    "maci-crypto": "^2.0.0",
+    "poseidon-lite": "^0.3.0",
+    "snarkjs": "^0.7.5",
+    "viem": "^2.48.4"
+  }
+}

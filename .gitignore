@@ -15,6 +15,9 @@ apps/contracts/out/
 apps/contracts/cache/
 apps/contracts/broadcast/
 apps/contracts/.gas-snapshot
+apps/eerc/out/
+apps/eerc/cache/
+apps/eerc/broadcast/
 
 # Python
 services/**/.venv/
@@ -74,3 +77,4 @@ coverage/
 
 # Foundry deps (forge install)
 apps/contracts/lib/
+apps/eerc/lib/

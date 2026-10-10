@@ -16,6 +16,12 @@ if git diff --cached --name-only | grep -qE '^apps/contracts/'; then
   (cd apps/contracts && ~/.foundry/bin/forge test) || exit 1
 fi
 
+# If any eERC sources changed, run forge test (separate Foundry project, solc 0.8.27)
+if git diff --cached --name-only | grep -qE '^apps/eerc/'; then
+  echo "→ Forge test (eerc)"
+  (cd apps/eerc && ~/.foundry/bin/forge test) || exit 1
+fi
+
 # If any SOR python sources changed, run pytest
 if git diff --cached --name-only | grep -qE '^services/sor/'; then
   echo "→ pytest services/sor"

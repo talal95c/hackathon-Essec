@@ -95,7 +95,11 @@ pir.api.emit(type: str, uetr: str, payload: dict) -> None    # publie sur le flu
 
 ## 3. Pipeline (orchestré par D, PRD « Ordre de décision »)
 
-`POST /v1/intents` → `chain.verify_signature` → `norms.evaluate` → `risk.score` (+ `ai.jev_questions`) → `pipeline.respond` → `routing.quote(allowed, level)` → `chain.publish` (+ `deposit` si `escrow`) → `connectors.execute` → si moyen : `payees.request_oob` → `answer_oob` → `chain.record_verification` → `release` ou `revoke`.
+`POST /v1/intents` → `chain.verify_signature` → `norms.evaluate` → `risk.score` (+ `ai.jev_questions`) → `pipeline.respond` → `routing.quote(allowed, level)` → selon `Decision.action` :
+
+- `execute` (faible) : `chain.publish` → `connectors.execute`.
+- `escrow` (moyen) : `chain.publish` → `chain.deposit` → `payees.request_oob` → `answer_oob` → `chain.record_verification` → **seulement si `chain.is_confirmed`** : `chain.release` → `connectors.execute` ; sinon `chain.revoke` (remboursement). Aucune jambe vers le bénéficiaire avant `CONFIRMED`.
+- `block` / `block_report` (élevé / critique) : **arrêt** — pas de `publish`, pas de `connectors.execute` ; événement `payment.blocked`, dossier ouvert (et déclaration préremplie si critique).
 
 ## 4. API HTTP (PRD §13) — P0 en gras
 

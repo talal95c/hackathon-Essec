@@ -2,7 +2,7 @@
 
 Proposition de projet principal pour le Track 2 (« Defenders Augmented ») de Secure Horizons, avec un pont vers le Track 1 (« Guardians of Value »). Rédigé le 10/10/2026, en complément de la [veille](veille-track2.md).
 
-> **Contexte jury (🟡 source : annonces Instagram KRYPTOSPHERE relayées par Google, non vérifiées sur une page officielle).** Track 1 « Guardians of Value » = sécuriser systèmes financiers, transactions et actifs numériques (jury Team1/Avalanche, KPMG, KRYPTOSPHERE). Track 2 = jury **GitGuardian, ESSEC Metalab, KPMG**. Partenaires : Bpifrance, GitGuardian, Artefact, Avalanche, KPMG, AWS. Ce document est optimisé pour ce jury : GitGuardian (secrets, identités non humaines, honeytokens), KPMG (gouvernance, auditabilité, conformité), Metalab (recherche, rigueur).
+> **Contexte jury.** Track 1 « Guardians of Value » (brief officiel ✅) = fintech security : analystes noyés, **agents IA qui manipulent de l'argent** (zone 3 : supervision et confinement des agents financiers), DORA/DeFi ; soutiens Team1 Avalanche, KPMG, Kryptosphère, Utopia, AWS. 🟡 (Instagram) Track 2 = jury **GitGuardian, ESSEC Metalab, KPMG**. Partenaires : Bpifrance, GitGuardian, Artefact, Avalanche, KPMG, AWS. Ce document est optimisé pour ce jury : GitGuardian (secrets, identités non humaines, honeytokens), KPMG (gouvernance, auditabilité, conformité), Metalab (recherche, rigueur).
 
 ---
 
@@ -126,6 +126,34 @@ L'architecture reprend celle validée sur LawHack (System 1 rapide et calibré +
 Mapping cadres : OWASP ASI01/02/03/06/07/08 ; MITRE ATLAS (prompt injection, LLM‑enabled exfiltration) ; ATT&CK T1567 (exfiltration vers service web), T1657 (financial theft) ; D3FEND (Execution Isolation, Credential Revoking, Decoy Credential) ; NIST CSF 2.0 Govern (registre des mandats), Detect (événements), Respond (révocation).
 
 ---
+
+## 5 bis. Pont Track 1 « Guardians of Value » (brief officiel reçu le 10/10)
+
+Le brief Track 1 décrit, mot pour mot, le problème que MANDAT résout. Zone d'innovation 3, *« Supervision and containment of financial AI agents »* : « *a low‑privilege research agent, manipulated by a booby‑trapped document, instructs a financial agent to execute a transaction. Without verification of the chain of authority or supervision, the action goes through (OWASP ASI03 and ASI07)* ». Pistes attendues : journal de chaque action avec sa **chaîne d'autorité**, détection des transactions **hors périmètre habituel**, jetons d'autorisation **très courts et révocables**, **kill switch** au‑delà d'un seuil de risque, validation humaine des actions sensibles. C'est l'architecture de MANDAT, point par point.
+
+### Ce que MANDAT ajoute spécifiquement pour le Track 1
+
+- **Chaîne d'autorité = chaîne de mandats.** Quand un agent délègue à un autre (agent recherche → agent paiement), il émet un **sous‑mandat** qui ne peut jamais excéder le sien (principe de non‑amplification : données, outils, plafonds, sorties ⊆ mandat parent). Chaque action porte la chaîne complète `humain → mandat → sous‑mandat → action`, signée et horodatée. Le scénario du brief (agent recherche piégé qui ordonne un virement) est bloqué **structurellement** : l'agent recherche n'a pas `prepare_payment` dans son mandat, donc il ne peut pas le déléguer ; et si l'agent paiement reçoit l'ordre quand même, la chaîne d'autorité ne remonte à aucun humain → refus + alerte.
+- **Hors périmètre habituel** : règles (plafond, allowlist d'IBAN/adresses, fenêtre horaire, fréquence) + Jev sur « cette transaction sert‑elle l'objectif du mandat ? ». Jetons éphémères par mandat (TTL minutes), révocation = kill switch, seuil de risque = P(dévie) × montant.
+- **Réponse graduée** (demandée par le brief et par la grille) : laisser passer → mettre en attente (*hold*) → exiger une validation humaine (*step‑up*) → geler l'agent (révocation) → alerter le client/compliance. Le **playbook de réponse** (qui est alerté, ce qui est automatique, ce qui reste humain, comment c'est documenté) sort directement du mandat : c'est le livrable « response playbook » attendu.
+- **DORA / conformité** : le copilote classe l'incident selon les critères DORA (impact, durée, étendue, criticité des services) et **pré‑remplit le rapport d'incident** à partir du journal (preuves `[evt‑id]`, chaîne d'autorité, actions prises, horodatage). Un auditeur peut rejouer chaque décision depuis le registre des mandats et le journal hash‑chaîné. Côté AI Act : journalisation, supervision humaine et traçabilité documentées par construction. (Les critères DORA exacts de classification sont à relire dans le RTS avant la slide « compliance ».)
+- **Réponse à la question piège du jury fintech, « et si votre modèle se trompe, qui est responsable ? »** : le modèle ne décide jamais seul. Le **principal humain qui a signé le mandat** est responsable du périmètre ; les règles déterministes font respecter ce périmètre quoi qu'en dise le modèle ; Jev ne sert qu'à *resserrer* (bloquer ou demander un humain), jamais à *élargir* ; toute erreur du modèle est donc au pire un faux positif (une transaction en attente de validation), jamais une transaction non autorisée. C'est aussi l'argument pour l'assureur (le brief cite l'exclusion des incidents « IA non contrôlée »).
+
+### Position sur la grille Track 1
+
+| Critère | Poids | Ce qu'on montre |
+|---|---|---|
+| Detection effectiveness | 30 % | Scénario rejoué : facture piégée → virement hors périmètre. Précision / faux positifs / temps de détection mesurés sur le bench (60 transactions légitimes, 60 attaques). |
+| Response quality | 20 % | Réponse graduée hold → step‑up → gel, playbook généré depuis le mandat. |
+| Feasibility & integration | 20 % | Proxy MCP devant un ERP/PSP simulé (API REST de paiement) ; même mandat applicable à un agent qui signe sur Avalanche Fuji (plafond, allowlist d'adresses) si le temps le permet. |
+| Compliance & explainability | 15 % | Registre des mandats, journal hash‑chaîné, rapport DORA pré‑rempli, chaîne d'autorité visible. |
+| Pitch & demo | 15 % | Même pitch, scène 2 en tête. |
+
+### Décision à prendre : où candidater ?
+
+Le projet est **le même** ; seule la scène mise en avant change (scène 1 outil empoisonné pour le Track 2, scène 2 fraude au virement + chaîne d'autorité pour le Track 1). À vérifier auprès des organisateurs si une équipe peut viser deux tracks ; sinon :
+- **Track 2** si on veut maximiser l'originalité (jury GitGuardian/Metalab, sujet MCP/Jev très différenciant).
+- **Track 1** si on veut maximiser la *correspondance au brief* (la zone 3 est littéralement notre projet, et le jury KPMG/Avalanche valorisera DORA + chaîne d'autorité). Risque : plus d'équipes « fraude/AML » classiques, mais probablement peu sur la zone 3.
 
 ## 6. Plan 36 h et rôles (4 personnes ; version 3 personnes = supprimer la scène 3 et Wazuh)
 

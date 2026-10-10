@@ -15,6 +15,7 @@ Permettre à une entreprise de payer n'importe quelle autre entreprise, partout 
 ### 1.2 Ce que le produit est / n'est pas
 
 - **Est** : une couche d'orchestration et d'intégrité au‑dessus de rails de paiement licenciés (banques, PSP, on/off‑ramps stablecoin, escrow on‑chain), utilisable par une PME (application) ou intégrée par une fintech/PSP (API, mode _layer++_).
+- **Tracks** : Track 1 (transactions sur une L1 Avalanche dédiée, registre de confirmation, jambe stablecoin chiffrée) en principal ; Track 3 en secondaire (défense agentique : Système 1 Jev / Système 2 Mistral déclenchent, retiennent ou bloquent, l'humain tranche).
 - **N'est pas** : un établissement de paiement, un détenteur de fonds, un émetteur de stablecoin, un outil de détection de fraude bancaire générique, ni une messagerie d'agents IA.
 
 ### 1.3 Objectifs mesurables
@@ -126,6 +127,7 @@ Format : **ID** · priorité · _user story_ · critères d'acceptation (CA).
 
 - **F‑JUR‑1** · P0 · _La localisation des deux parties est détectée et charge les profils._ CA : pays/devise/entité déduits du registre et de l'IBAN/compte ; profils FR et CN complets ; profil = un fichier déclaratif.
 - **F‑JUR‑2** · P0 · _Un profil décrit rails, horaires, plafonds, exigences._ CA : rails disponibles, heures d'ouverture/cut‑offs/fuseaux/week‑ends, plafonds par transaction et par jour, documents requis au‑dessus d'un seuil, exigences (VoP, Travel Rule, SAFE, Open Banking NG), score CLEAR par rail.
+- **F‑JUR‑3** · P2 · _Information fiscale par corridor._ CA : le profil porte `fiscalite` { convention bilatérale OUI/NON (réseau OCDE), retenue à la source indicative sur services, documents attendus (certificat de résidence, facture conforme) } ; affiché dans « Chemin proposé » et dans la notification au fournisseur ; **le routeur informe, ne calcule ni ne retient d'impôt** (NF‑11).
 - **F‑JUR‑3** · P1 · _Ajouter un pays = ajouter un profil._ CA : profils NG et US ajoutés pendant la démo ; aucun changement de code.
 - **F‑JUR‑4** · P1 · _Les chemins illégaux n'existent pas._ CA : un rail non autorisé pour la paire (pays, devise, montant) n'apparaît pas dans le graphe ; `allow_crypto = false` exclut toute jambe crypto.
 
@@ -175,12 +177,17 @@ Format : **ID** · priorité · _user story_ · critères d'acceptation (CA).
 
 Rôle : source de confirmation **indépendante de la plateforme** — un rail, un PSP, le fournisseur ou un auditeur vérifient une intention, sa révocation ou l'attestation d'un bénéficiaire sans nous faire confiance. Écriture asynchrone, lecture au règlement, hashes uniquement.
 
-- **F‑AVAX‑1** · P1 · _Chaque intention signée est publiée._ CA : à la signature, `intent_hash`, identifiants hachés payeur/bénéficiaire, montant plafond, devise, date limite écrits dans le contrat `IntentRegistry` (Fuji) ; écriture asynchrone, la garde n'attend pas la finalité ; statut « publié / en attente » visible dans la timeline ; aucune donnée personnelle en clair.
+Choix **Avalanche‑native** (décision après échange mentor) : la cible de la démo est une **L1 PIR dédiée** sur Avalanche (testnet, ≈ 1,33 AVAX de test), privée, gas en USDC de test ou token custom, déployée via le MCP Avalanche, explorer fourni par le mentor ; **Fuji C‑Chain est le repli** si la L1 n'est pas opérationnelle à H+20. Les contrats (`IntentRegistry`, `TradeEscrow`, eERC) sont chain‑agnostiques : même bytecode, seule la config RPC/chainId change.
+
+- **F‑AVAX‑1** · P1 · _Chaque intention signée est publiée._ CA : à la signature, `intent_hash`, identifiants hachés payeur/bénéficiaire, montant plafond, devise, date limite écrits dans le contrat `IntentRegistry` (L1 PIR, repli Fuji) ; écriture asynchrone, la garde n'attend pas la finalité ; statut « publié / en attente » visible dans la timeline ; aucune donnée personnelle en clair.
 - **F‑AVAX‑2** · P1 · _Un adaptateur confirme l'intention avant de régler._ CA : avant `initiate` de la jambe de règlement, l'adaptateur lit le registre : intention existante, non révoquée, non expirée, montant ≤ plafond ; sinon refus journalisé ; démo : le PSP CNY simulé fait cette lecture.
 - **F‑AVAX‑3** · P1 · _La révocation est inscrite on‑chain._ CA : révocation (F‑INT‑6) ou kill switch → événement `Revoked` ; toute lecture ultérieure retourne « révoquée » ; latence de propagation < 5 s affichée.
 - **F‑AVAX‑4** · P2 · _Attestation de bénéficiaire ancrée._ CA : le fournisseur (ou son PSP) signe « ce compte m'appartient » ; hash de l'attestation + identifiant haché du compte ancrés ; F‑REG‑2 accepte cette attestation comme méthode de vérification ; vérifiable par un tiers depuis l'écran de suivi.
 - **F‑AVAX‑5** · P2 · _Ancrage du journal._ = F‑LOG‑6.
 - **F‑AVAX‑6** · P1 · _Mode dégradé sans chaîne._ CA : RPC indisponible → confirmation par notre API, bandeau « confirmation on‑chain indisponible », écriture rejouée dès retour ; aucune jambe débloquée par défaut.
+- **F‑AVAX‑7** · P1 · _Jambe stablecoin chiffrée (eERC, mode converter)._ CA : mock USDC + contrat eERC déployés sur la L1 ; l'adaptateur stablecoin encapsule (USDC → eUSDC), transfère, le bénéficiaire désencapsule ; soldes et montants invisibles sur l'explorer ; **l'adresse auditeur** du contrat eERC est celle du persona Auditeur et est enregistrée dans `IntentRegistry` ; l'écran Audit montre le montant déchiffré par l'auditeur, l'explorer montre qu'il est chiffré pour les autres ; si la génération de preuves zk n'est pas utilisable en 36 h, le flux est montré côté contrat et étiqueté « partiel ».
+- **F‑AVAX‑8** · P1 · _L1 PIR dédiée._ CA : chaîne déployée (nom, chainId, token de gas, RPC sur sous‑domaine, nœud sur une VM), explorer accessible, `IntentRegistry`/`TradeEscrow`/eERC déployés dessus, `.env` pointant vers la L1 ; bascule vers Fuji par simple changement de config ; décision L1 vs repli prise à H+20 et consignée.
+- **F‑AVAX‑9** · P1 · _Preuve visible en démo._ CA : depuis la timeline, lien explorer vers l'intention publiée, puis vers l'événement `Revoked` après l'attaque ; un tiers peut refaire la vérification sans notre UI.
 
 ### 4.8 Prérequis de plateforme (ajoutés par la revue de faisabilité)
 
@@ -248,18 +255,20 @@ Rôle : source de confirmation **indépendante de la plateforme** — un rail, u
 
 ### 7.2 Intégrations
 
-| Intégration                                                                                          | Démo                                                             | Statut                                                           |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Jev (Système 1)                                                                                      | API hébergée, banque de questions                                | réel (quota)                                                     |
-| Mistral (Système 2)                                                                                  | API, modèle européen                                             | réel                                                             |
-| Extraction de facture                                                                                | vision Claude ou Mistral                                         | réel                                                             |
-| SEPA Inst, PSP CNY, on/off‑ramp                                                                      | adaptateurs **simulés**                                          | simulé, étiqueté                                                 |
-| Sandbox PSP (Airwallex ou équivalent)                                                                | `quote` + `initiate`                                             | sandbox (P1)                                                     |
-| Registres (GLEIF, INPI, CAC, Tianyancha)                                                             | fixtures + API quand gratuite                                    | mixte (P1)                                                       |
-| Base de données                                                                                      | Supabase/Postgres (RLS)                                          | réel                                                             |
-| Registre de confirmation `IntentRegistry` (intentions, révocations, attestations, racine du journal) | Avalanche Fuji, viem                                             | testnet (P1 pour intentions/révocation, P2 attestations/ancrage) |
-| Escrow conditionnel `TradeEscrow`                                                                    | Avalanche Fuji                                                   | testnet (P2)                                                     |
-| Notifications hors bande                                                                             | panneau « téléphone simulé » dans l'UI (F‑DEMO‑2) ; Twilio en P2 | simulé, étiqueté                                                 |
+| Intégration                                                                                                    | Démo                                                             | Statut                                                      |
+| -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------- |
+| Jev (Système 1)                                                                                                | API hébergée, banque de questions                                | réel (quota)                                                |
+| Mistral (Système 2)                                                                                            | API, modèle européen                                             | réel                                                        |
+| Extraction de facture                                                                                          | vision Claude ou Mistral                                         | réel                                                        |
+| SEPA Inst, PSP CNY, on/off‑ramp                                                                                | adaptateurs **simulés**                                          | simulé, étiqueté                                            |
+| Sandbox PSP (Airwallex ou équivalent)                                                                          | `quote` + `initiate`                                             | sandbox (P1)                                                |
+| Registres (GLEIF, INPI, CAC, Tianyancha)                                                                       | fixtures + API quand gratuite                                    | mixte (P1)                                                  |
+| Base de données                                                                                                | Supabase/Postgres (RLS)                                          | réel                                                        |
+| L1 PIR dédiée (chaîne privée, gas USDC/test, RPC + explorer)                                                   | Avalanche L1 testnet, MCP Avalanche, Foundry, viem               | testnet (P1) ; repli Fuji C‑Chain                           |
+| Registre de confirmation `IntentRegistry` (intentions, révocations, attestations, auditeur, racine du journal) | L1 PIR / Fuji, viem                                              | testnet (P1 intentions/révocation, P2 attestations/ancrage) |
+| Jambe stablecoin chiffrée (mock USDC + eERC converter, clé auditeur)                                           | L1 PIR / Fuji                                                    | testnet (P1, « partiel » si preuves zk indisponibles)       |
+| Escrow conditionnel `TradeEscrow`                                                                              | L1 PIR / Fuji                                                    | testnet (P2)                                                |
+| Notifications hors bande                                                                                       | panneau « téléphone simulé » dans l'UI (F‑DEMO‑2) ; Twilio en P2 | simulé, étiqueté                                            |
 
 ---
 
@@ -282,7 +291,7 @@ Direction artistique : minimaliste, propre, pixel‑perfect, micro‑animations 
 ## 9. Évaluation et démo
 
 - **Jeu d'évaluation** : voir F‑EVAL‑1/2/3 ; chiffres affichés dans le pitch uniquement s'ils sortent du script de mesure.
-- **Script de démo (3 min)** : 0:00 problème en une phrase + 1 chiffre (BEC 3,05 Md$) · 0:20 nominal vendredi soir, chemin et ETA · 1:00 BEC en direct : retenue, explication, annulation · 1:50 substitution en transit refusée par l'adaptateur · 2:15 dashboard KPI + « ce que le routeur a appris » · 2:40 ajout du Nigeria en un fichier · 2:55 promesse.
+- **Script de démo (3 min)** : 0:00 problème en une phrase + 1 chiffre (BEC 3,05 Md$) · 0:20 nominal vendredi soir, chemin et ETA · 0:45 **preuve** : intention publiée sur la L1 PIR (explorer), montant de la jambe stablecoin chiffré (eERC) que seul l'auditeur déchiffre · 1:00 BEC en direct : retenue, explication, annulation, révocation visible sur l'explorer · 1:50 substitution en transit refusée par l'adaptateur (intention révoquée on‑chain) · 2:15 dashboard KPI + « ce que le routeur a appris » · 2:40 ajout du Nigeria en un fichier · 2:55 promesse.
 - **Vidéo de secours** enregistrée à H+34.
 
 ---
@@ -293,15 +302,17 @@ Direction artistique : minimaliste, propre, pixel‑perfect, micro‑animations 
 
 **Risques**
 
-| Risque                           | Mitigation                                                                 |
-| -------------------------------- | -------------------------------------------------------------------------- |
-| Avalanche sur le chemin critique | écriture asynchrone, lecture seulement au règlement, mode dégradé F‑AVAX‑6 |
-| Données personnelles on‑chain    | hashes et engagements uniquement, revue RGPD/PIPL des champs publiés       |
-| Jev indisponible / quota         | mode dégradé (NF‑2), cache des réponses sur le jeu de démo                 |
-| Jeu synthétique trop facile      | neutralisation des raccourcis, ablations, honnêteté sur les limites        |
-| Trop de périmètre pour 36 h      | priorités P0/P1/P2 et ordre de coupe de `projet.md` §8                     |
-| Simulations prises pour du réel  | étiquetage systématique (NF‑11)                                            |
-| Approval fatigue en démo         | budget d'alertes et scénarios légitimes nombreux dans le jeu               |
+| Risque                                                 | Mitigation                                                                         |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| L1 dédiée : temps ops (nœud, RPC, DNS)                 | une personne dédiée dès H+14, repli Fuji décidé à H+20, contrats chain‑agnostiques |
+| eERC : lib immature, preuves zk lentes ou côté serveur | flux montré côté contrat et étiqueté « partiel » ; question posée au mentor        |
+| Avalanche sur le chemin critique                       | écriture asynchrone, lecture seulement au règlement, mode dégradé F‑AVAX‑6         |
+| Données personnelles on‑chain                          | hashes et engagements uniquement, revue RGPD/PIPL des champs publiés               |
+| Jev indisponible / quota                               | mode dégradé (NF‑2), cache des réponses sur le jeu de démo                         |
+| Jeu synthétique trop facile                            | neutralisation des raccourcis, ablations, honnêteté sur les limites                |
+| Trop de périmètre pour 36 h                            | priorités P0/P1/P2 et ordre de coupe de `projet.md` §8                             |
+| Simulations prises pour du réel                        | étiquetage systématique (NF‑11)                                                    |
+| Approval fatigue en démo                               | budget d'alertes et scénarios légitimes nombreux dans le jeu                       |
 
 **Questions ouvertes**
 
@@ -328,7 +339,8 @@ Relecture du PRD contre `projet.md` et contre l'objectif « vraie solution à un
 8. **Les KPI mélangeaient démo et promesse.** Corrigé : §1.3 distingue cible hackathon (mesurée sur le jeu d'évaluation) et cible 6 mois (pilotes) ; NF‑11 interdit tout chiffre non mesuré dans le pitch.
 9. **Le classifieur et Jev risquaient de juger la même chose.** Clarifié : le classifieur juge le _comportement_ (historique du couple), Jev la _sémantique_ (facture, intention, contexte) ; leur indépendance est ce qui rend le désaccord informatif.
 10. **Avalanche était un bonus décoratif.** « Ancrer le journal » n'apportait rien que le hash‑chaînage ne fasse déjà pour un auditeur qui nous fait confiance. Corrigé : la chaîne sert à **confirmer** ce qui doit être vérifiable par des tiers qui ne nous font pas confiance — intentions, révocations, attestations de bénéficiaire (§4.10) — avec deux garde‑fous : hors chemin critique et sans données personnelles. Reste discutable : la lecture on‑chain par un PSP réel suppose qu'il accepte de l'intégrer ; en démo, seul l'adaptateur simulé le fait.
-11. **Ce qui reste discutable** (assumé, pas corrigé) : (a) Jev reste un service hébergé externe sur le chemin critique — le cache de démo et le mode dégradé limitent le risque, mais une version auto‑hébergée du Système 1 serait préférable en production ; (b) les adaptateurs simulés rendent les KPI coût/délai illustratifs — seuls les KPI de sécurité (détournement, détection, faux positifs, latence) sont réellement mesurés sur le jeu ; (c) le registre de bénéficiaires a un cold start réel que les fixtures masquent ; (d) la valeur « layer++ » pour un PSP n'est pas démontrée en 36 h, seulement rendue crédible par l'interface `RailAdapter` et le mode ombre.
+11. **Retour mentor (ex‑Avalanche) intégré.** (a) « Blockchain = tout le monde voit nos paiements » : la jambe stablecoin passe en **eERC** (montants chiffrés, clé auditeur = persona Auditeur) → confidentialité et AML dans le même geste (F‑AVAX‑7) ; (b) **L1 dédiée** plutôt que C‑Chain publique : forme concrète du « L1 permissionné pour PSP », quasi gratuite sur testnet, mais ops inédites → P1 avec repli Fuji décidé à H+20 (F‑AVAX‑8) ; (c) ce qu'il veut voir : la **preuve d'immutabilité** visible et une attaque bloquée → F‑AVAX‑9 et script de démo ; (d) **fiscalité** (conventions OCDE, retenues) absente → F‑JUR‑3 en information seulement ; (e) pas de standard d'attestation dans l'écosystème → attestation EIP‑712 ancrée conservée ; (f) Track 1 principal, Track 3 secondaire assumé (§1.2).
+12. **Ce qui reste discutable** (assumé, pas corrigé) : (a) Jev reste un service hébergé externe sur le chemin critique — le cache de démo et le mode dégradé limitent le risque, mais une version auto‑hébergée du Système 1 serait préférable en production ; (b) les adaptateurs simulés rendent les KPI coût/délai illustratifs — seuls les KPI de sécurité (détournement, détection, faux positifs, latence) sont réellement mesurés sur le jeu ; (c) le registre de bénéficiaires a un cold start réel que les fixtures masquent ; (d) la valeur « layer++ » pour un PSP n'est pas démontrée en 36 h, seulement rendue crédible par l'interface `RailAdapter` et le mode ombre.
 
 **Verdict** : le PRD est aligné avec `projet.md` (même principe directeur, mêmes huit composants, mêmes quatre flux, mêmes cibles), et il est honnête sur ce qui est simulé. Son point fort est que chaque exigence P0 a un critère d'acceptation testable et que les garanties annoncées au jury (§4.3 de `projet.md`) correspondent chacune à au moins une exigence : intention vérifiée dans chaque rail → F‑RAIL‑2 ; protection avant signature → F‑REG‑2 ; vérification transfrontalière → F‑REG‑2/4/5 ; routeur apprenant mais déterministe → F‑RTR‑1/4 ; deux juges + raisonneur + humain → F‑GRD‑3/4/5/6/7 ; conformité portable → F‑LOG‑4 ; journal infalsifiable → F‑LOG‑1/6.
 
@@ -381,7 +393,9 @@ Dépendances externes et leur risque :
 | Clé Codiv/TypeSafe (Jev, `openjev-latest`), quota 60 req/min | **élevé** : partagé entre démo, dev et évaluation ; une évaluation à plein régime casse la démo (vécu LawHack) | cache des réponses ; évaluation lancée **séquentiellement, la nuit, ≤ 25 req/min** ; mode dégradé F‑GRD‑9 ; ne jamais lancer deux jobs Jev en même temps |
 | Clé Mistral                                                  | moyen : 429 à concurrence ≥ 3, clés qui expirent                                                               | un appel à la fois, backoff, explication de repli (règles + SHAP)                                                                                        |
 | Clé Anthropic ou Mistral vision (extraction de facture)      | faible                                                                                                         | 3 factures de démo pré‑extraites en fixtures si l'API tombe                                                                                              |
-| Avalanche Fuji (RPC public + faucet)                         | faible : faucet parfois lent                                                                                   | demander les AVAX de test à H+0 ; RPC de secours                                                                                                         |
+| L1 PIR (MCP Avalanche, nœud, RPC, explorer du mentor)        | **moyen** : ops inédites pour l'équipe                                                                         | personne D dès H+14, repli Fuji à H+20                                                                                                                   |
+| eERC (AvaCloud) sur testnet                                  | moyen : maturité de la lib / preuves zk                                                                        | mode « partiel » étiqueté                                                                                                                                |
+| Avalanche Fuji (RPC public + faucet) — repli                 | faible : faucet parfois lent                                                                                   | demander les AVAX de test à H+0 ; RPC de secours                                                                                                         |
 | Airwallex sandbox                                            | **élevé** : validation de compte non garantie en 36 h                                                          | reste P1 ; adaptateur simulé étiqueté                                                                                                                    |
 | Docker + Supabase local                                      | faible                                                                                                         | déjà éprouvé sur la base de code                                                                                                                         |
 
@@ -402,22 +416,22 @@ Dépendances externes et leur risque :
 
 **Comptes et clés à obtenir avant H+0** (dans `apps/web/.env.local`, jamais commités) :
 
-| Variable                                                                                                          | Usage                                     | Qui / où                                                                                        |
-| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL=https://api.codiv.ai`, `SYSTEM_ONE_MODEL=openjev-latest`                   | Jev (Système 1)                           | clé Codiv existante (LawHack) — vérifier le quota                                               |
-| `MISTRAL_API_KEY`                                                                                                 | Système 2 + extraction de facture (repli) | console Mistral                                                                                 |
-| `ANTHROPIC_API_KEY` (optionnel)                                                                                   | extraction de facture (vision)            | déjà prévu dans `lib/intake`                                                                    |
-| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`…                                                          | base, auth, storage                       | `supabase start` les affiche                                                                    |
-| `AVALANCHE_FUJI_RPC`, `DEPLOYER_PRIVATE_KEY` (compte de test uniquement), adresses `IntentRegistry`/`TradeEscrow` | registre de confirmation, escrow          | wallet neuf + faucet Fuji ; remplacer `sepolia` par `avalancheFuji` dans `lib/escrow/client.ts` |
-| `AIRWALLEX_*` (optionnel, P1)                                                                                     | sandbox PSP                               | demande de compte dès maintenant                                                                |
+| Variable                                                                                                                                                                      | Usage                                        | Qui / où                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL=https://api.codiv.ai`, `SYSTEM_ONE_MODEL=openjev-latest`                                                                               | Jev (Système 1)                              | clé Codiv existante (LawHack) — vérifier le quota                                                                                                                         |
+| `MISTRAL_API_KEY`                                                                                                                                                             | Système 2 + extraction de facture (repli)    | console Mistral                                                                                                                                                           |
+| `ANTHROPIC_API_KEY` (optionnel)                                                                                                                                               | extraction de facture (vision)               | déjà prévu dans `lib/intake`                                                                                                                                              |
+| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`…                                                                                                                      | base, auth, storage                          | `supabase start` les affiche                                                                                                                                              |
+| `CHAIN_RPC_URL`, `CHAIN_ID`, `EXPLORER_URL`, `DEPLOYER_PRIVATE_KEY` (compte de test uniquement), adresses `IntentRegistry`/`TradeEscrow`/`MockUSDC`/`eERC`, `AUDITOR_ADDRESS` | L1 PIR (repli Fuji) : registre, escrow, eERC | wallet neuf + faucet Fuji (≥ 2 AVAX test : 1,33 pour la L1) ; MCP Avalanche pour déployer la L1 ; lien explorer du mentor ; chaîne définie en config viem (`defineChain`) |
+| `AIRWALLEX_*` (optionnel, P1)                                                                                                                                                 | sandbox PSP                                  | demande de compte dès maintenant                                                                                                                                          |
 
 **Données à préparer** (F‑DATA‑1) : 3 factures PDF (dont la BEC avec domaine proche et IBAN d'un autre pays), logos/identités des 2 entreprises et 3 fournisseurs, 12 paiements historiques, profils FR/CN (horaires, plafonds, rails), grille de prix de référence (Wise, SWIFT) sourcée pour la comparaison affichée.
 
-**Équipe (4 personnes, confirmé)** : (A) _core + garde_ — types, hash/signature, règles, Jev, Mistral, décision ; (B) _routeur + adaptateurs_ — graphe/horaires sur le SOR, 3 adaptateurs, vérification `intent_hash`/nonce, fallback ; (C) _front_ — 9 écrans sur la DA la base de code existante, horloge de démo, téléphone simulé, KPI ; (D) _données, évaluation, chaîne_ — fixtures, générateur de scénarios, classifieur, métriques, `IntentRegistry` sur Fuji, pitch et vidéo. À 3 : D est réparti entre A (évaluation) et B (chaîne), et la coupe §12.2 s'applique d'emblée.
+**Équipe (4 personnes, confirmé)** : (A) _core + garde_ — types, hash/signature, règles, Jev, Mistral, décision ; (B) _routeur + adaptateurs_ — graphe/horaires sur le SOR, 3 adaptateurs, vérification `intent_hash`/nonce, fallback ; (C) _front_ — 9 écrans sur la DA la base de code existante, horloge de démo, téléphone simulé, KPI ; (D) _données, évaluation, chaîne_ — fixtures, générateur de scénarios, classifieur, métriques, L1 PIR + `IntentRegistry` + eERC (repli Fuji), pitch et vidéo. À 3 : D est réparti entre A (évaluation) et B (chaîne), et la coupe §12.2 s'applique d'emblée.
 
 **Conventions** : une branche par personne, merge dans `main` toutes les 3 h via PR courte ; tout ce qui est simulé porte un badge « simulé » dans l'UI et un préfixe `Mock` dans le code ; aucun chiffre dans le pitch sans ligne dans `services/eval` ou source dans `projet.md` ; démo répétée à H+20, H+28, H+34.
 
-**Checklist H+0 (30 min)** : fork + `pnpm install` + `supabase start` OK sur 4 machines · clés dans `.env.local` · appel Jev de test (1 question) et appel Mistral de test OK · wallet Fuji financé · `packages/core` créé avec `intentHash()` et un test · tableau des P0 affiché avec propriétaires · horloge de démo sur « vendredi 19:00 Europe/Paris ».
+**Checklist H+0 (30 min)** : copie + `pnpm install` + `supabase start` OK sur 4 machines · clés dans `.env.local` · appel Jev de test (1 question) et appel Mistral de test OK · wallet Fuji financé (≥ 2 AVAX test) · liens MCP Avalanche + explorer mentor récupérés · VM pour le nœud L1 réservée · `packages/core` créé avec `intentHash()` et un test · tableau des P0 affiché avec propriétaires · horloge de démo sur « vendredi 19:00 Europe/Paris ».
 
 ### 12.5 Verdict
 

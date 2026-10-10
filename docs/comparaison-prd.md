@@ -65,7 +65,7 @@ Notes de 1 à 5, _(analyse)_ : jugement de lecture, pas une mesure. Pondération
 - Longueur et anglais ; aucune visualisation en direct ; P0 trop lourd pour ≈ 21 h.
 - La dépendance au mentor pour la L1 ; en mode A, les montants restent publics pendant le séquestre.
 - Q5 sur les recettes d'exportation via VASP reste non résolue ; seuils encore provisoires.
-- D parle d'un « Track 3 angle ». `CONSIGNE.md` nomme **Track 2 — AI for Security & Secure AI: Defenders Augmented** : corriger le numéro et conserver cette question ouverte jusqu'à validation du positionnement.
+- D parle d'un « Track 3 angle » : c'est le positionnement confirmé par l'équipe, à savoir **Track 1**, avec une ouverture possible sur la **Track 3**.
 
 ---
 

@@ -1,6 +1,6 @@
 # PRD final — PIR · « L'Aiguilleur »
 
-> v3.0 · 10 octobre 2026 · Secure Horizons (ESSEC) · Track 1 — Fintech Security ; Track 2 — AI for Security & Secure AI: Defenders Augmented.
+> v3.0 · 10 octobre 2026 · Secure Horizons (ESSEC) · Track 1 — Fintech Security: Guardians of Value, avec une ouverture possible sur la Track 3.
 > **Fusion de quatre PRD** : _L'Aiguilleur_ (Oscar), notre _Payment Integrity Router_ v1.1, _Risk-Aware Payment Router_ et le PRD de Youssef. Comparaison et arbitrages : [`comparaison-prd.md`](./comparaison-prd.md). Sources d'origine : [`prd-sources/`](./prd-sources/) et [`prd.md`](./prd.md) (v1.1, conservé pour l'historique).
 > Priorités : **P0** = indispensable à la démo, jamais coupé · **P1** = prêt avant dimanche 6 h · **P2** = bonus / feuille de route.
 
@@ -518,7 +518,6 @@ Verdict _(analyse)_ : ≈ 57 h·p demandées pour ≈ 56 disponibles ; tenable s
 - Réutiliser ou remplacer le séquestre existant à trois tranches.
 - Durée réelle du build : ≈ 19 h dans le planning v2.0, ≈ 21 h selon D, à confirmer.
 - Disponibilité opérationnelle du L1 PIR au point de décision de dimanche 0 h ; sinon Fuji.
-- Positionnement exact de l'IA selon la consigne du jury : CONSIGNE nomme Track 2, D parle d'un « Track 3 angle ».
 - Liquidité des agents par région (hypothèse simulée).
 - Vérification de l'`intent_hash` par un vrai rail : seul le connecteur simulé est couvert ici.
 

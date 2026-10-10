@@ -20,6 +20,7 @@ Permettre à une entreprise de payer n'importe quelle autre entreprise, partout 
 | KPI produit | Définition | Cible hackathon (jeu d'évaluation) | Cible 6 mois (pilotes) |
 |---|---|---|---|
 | **Taux de détournement** | paiements exécutés vers un bénéficiaire/montant ≠ intention signée / total | **0** sur le jeu d'attaque | 0 confirmé sur volume réel |
+| **Confirmations on‑chain** | intentions publiées et lues par un adaptateur avant règlement | 100 % des paiements de la démo, aucune donnée personnelle en clair | idem, sous‑réseau consortium à l'étude |
 | **Détection des attaques** | scénarios d'attaque retenus ou bloqués / scénarios d'attaque | > 95 % | > 98 % |
 | **Faux positifs** | paiements légitimes retenus / paiements légitimes | < 3 % | < 2 %, budget d'alertes respecté |
 | **Coût total** | frais + spread FX + frais de rail, en % du montant | < 1 % sur le corridor démo | < 1,5 % moyenne, aucun corridor > 3 % (cible G20) |
@@ -73,7 +74,7 @@ Une PME française paie 48 000 $ à un fournisseur chinois un vendredi 19 h ; le
 ### 3.4 Substitution en transit (P0)
 1. Après signature, un adaptateur compromis (ou une re‑tentative) tente d'exécuter une jambe vers un autre compte, ou de rejouer une jambe déjà exécutée.
 2. L'adaptateur aval refuse : `intent_hash` ≠ ou nonce déjà consommé.
-3. La garde détecte la dérive → **kill switch** sur la route → fallback vers un autre rail → alerte Ops + Claire.
+3. La garde détecte la dérive → **kill switch** sur la route, révocation inscrite sur Avalanche (visible par tous les rails) → fallback vers un autre rail → alerte Ops + Claire.
 4. Preuve dans le journal (jambe refusée, raison, horodatage).
 
 ### 3.5 Rail défaillant (P1)
@@ -82,7 +83,7 @@ Une PME française paie 48 000 $ à un fournisseur chinois un vendredi 19 h ; le
 3. ETA mis à jour pour Claire et M. Chen.
 
 ### 3.6 Consultation d'audit (P1)
-L'auditeur ouvre un paiement, voit la chaîne complète (intention → route → gestes → décisions → preuves), vérifie la chaîne de hashs (et la racine ancrée on‑chain en P2), exporte un rapport et les fichiers ISO 20022.
+L'auditeur ouvre un paiement, voit la chaîne complète (intention → route → gestes → décisions → preuves), vérifie la chaîne de hashs et **confirme sur Avalanche**, sans notre API, que l'intention publiée correspond et n'a pas été révoquée (racine du journal ancrée en P2), exporte un rapport et les fichiers ISO 20022.
 
 ### 3.7 Intégration *layer++* (P2)
 Aïcha branche la garde en **mode ombre** devant ses flux existants (observe et score, ne bloque rien), puis active progressivement vérification hors bande, hold, enforcement.
@@ -135,7 +136,7 @@ Format : **ID** · priorité · *user story* · critères d'acceptation (CA).
 - **F‑RAIL‑4** · P0 · *Trois adaptateurs simulés réalistes.* CA : SEPA Inst (délai 10 s, horaires 24/7), stablecoin on/off‑ramp (slippage simulé, 24/7), PSP CNY (horaires lun–ven 9–17 CST, retour aléatoire paramétrable) ; webhooks normalisés ; clairement étiquetés « simulé » dans l'UI.
 - **F‑RAIL‑5** · P1 · *Export ISO 20022.* CA : `pain.001` par paiement, `camt.054` par événement de règlement, validés par schéma XSD.
 - **F‑RAIL‑6** · P1 · *Un rail réel en sandbox.* CA : un adaptateur branché sur un sandbox (Airwallex ou équivalent) exécute `quote` et `initiate` ; étiqueté « sandbox ».
-- **F‑RAIL‑7** · P2 · *Escrow on‑chain avec policy wrapper.* CA : contrat vérifiant montant ≤ intention, bénéficiaire ∈ intention, credentials présents, intention non révoquée ; testnet uniquement.
+- **F‑RAIL‑7** · P2 · *Escrow on‑chain conditionnel.* CA : `TradeEscrow` ne libère les fonds que si le registre de confirmation (§4.9) indique intention confirmée, non révoquée, bénéficiaire attesté, credentials présents ; testnet uniquement.
 - **F‑RAIL‑8** · P2 · *Travel Rule sur la jambe crypto.* CA : message IVMS101 généré et attaché à la jambe.
 
 ### 4.6 Garde (Système 1 + Système 2)
@@ -158,7 +159,18 @@ Format : **ID** · priorité · *user story* · critères d'acceptation (CA).
 - **F‑LOG‑3** · P0 · *Tableau de bord KPI live.* CA : coût total %, délai, STP, fraudes bloquées, faux positifs, économies cumulées vs référence (SWIFT), mis à jour à chaque événement.
 - **F‑LOG‑4** · P1 · *Contrôles portables.* CA : KYB, AML, Travel Rule, documents émis comme VC attachés à la route ; un adaptateur peut exiger un VC et le vérifier sans refaire le contrôle.
 - **F‑LOG‑5** · P1 · *Export d'audit.* CA : rapport PDF/JSON par paiement avec chaîne de hashs ; exports ISO 20022.
-- **F‑LOG‑6** · P2 · *Ancrage on‑chain.* CA : racine de la chaîne publiée périodiquement (Avalanche Fuji) ; vérification depuis l'UI.
+- **F‑LOG‑6** · P2 · *Ancrage on‑chain.* CA : racine de la chaîne publiée périodiquement dans le registre de confirmation ; vérification depuis l'UI.
+
+### 4.9 Registre de confirmation (Avalanche)
+
+Rôle : source de confirmation **indépendante de la plateforme** — un rail, un PSP, le fournisseur ou un auditeur vérifient une intention, sa révocation ou l'attestation d'un bénéficiaire sans nous faire confiance. Écriture asynchrone, lecture au règlement, hashes uniquement.
+
+- **F‑AVAX‑1** · P1 · *Chaque intention signée est publiée.* CA : à la signature, `intent_hash`, identifiants hachés payeur/bénéficiaire, montant plafond, devise, date limite écrits dans le contrat `IntentRegistry` (Fuji) ; écriture asynchrone, la garde n'attend pas la finalité ; statut « publié / en attente » visible dans la timeline ; aucune donnée personnelle en clair.
+- **F‑AVAX‑2** · P1 · *Un adaptateur confirme l'intention avant de régler.* CA : avant `initiate` de la jambe de règlement, l'adaptateur lit le registre : intention existante, non révoquée, non expirée, montant ≤ plafond ; sinon refus journalisé ; démo : le PSP CNY simulé fait cette lecture.
+- **F‑AVAX‑3** · P1 · *La révocation est inscrite on‑chain.* CA : révocation (F‑INT‑6) ou kill switch → événement `Revoked` ; toute lecture ultérieure retourne « révoquée » ; latence de propagation < 5 s affichée.
+- **F‑AVAX‑4** · P2 · *Attestation de bénéficiaire ancrée.* CA : le fournisseur (ou son PSP) signe « ce compte m'appartient » ; hash de l'attestation + identifiant haché du compte ancrés ; F‑REG‑2 accepte cette attestation comme méthode de vérification ; vérifiable par un tiers depuis l'écran de suivi.
+- **F‑AVAX‑5** · P2 · *Ancrage du journal.* = F‑LOG‑6.
+- **F‑AVAX‑6** · P1 · *Mode dégradé sans chaîne.* CA : RPC indisponible → confirmation par notre API, bandeau « confirmation on‑chain indisponible », écriture rejouée dès retour ; aucune jambe débloquée par défaut.
 
 ### 4.8 Évaluation
 
@@ -226,7 +238,8 @@ Format : **ID** · priorité · *user story* · critères d'acceptation (CA).
 | Sandbox PSP (Airwallex ou équivalent) | `quote` + `initiate` | sandbox (P1) |
 | Registres (GLEIF, INPI, CAC, Tianyancha) | fixtures + API quand gratuite | mixte (P1) |
 | Base de données | Supabase/Postgres (RLS) | réel |
-| Escrow / ancrage | Avalanche Fuji | testnet (P2) |
+| Registre de confirmation `IntentRegistry` (intentions, révocations, attestations, racine du journal) | Avalanche Fuji, viem | testnet (P1 pour intentions/révocation, P2 attestations/ancrage) |
+| Escrow conditionnel `TradeEscrow` | Avalanche Fuji | testnet (P2) |
 | Notifications hors bande | push app + SMS (ou simulation visible) | simulé si pas de fournisseur |
 
 ---
@@ -241,7 +254,7 @@ Direction artistique : minimaliste, propre, pixel‑perfect, micro‑animations 
 4. **Timeline du paiement** — jambes, états, décisions de garde (pass/hold/block avec contributions), événements rail, ETA.
 5. **Retenue** — en une vue : ce qui a été demandé, ce qui a dévié, l'explication Mistral, les preuves, trois actions (confirmer / annuler / vérifier).
 6. **Tableau de bord KPI** — coût %, délai, STP, fraudes bloquées, faux positifs, économies ; onglet « ce que le routeur a appris ».
-7. **Audit** — chaîne d'événements, vérification de hashs, exports.
+7. **Audit** — chaîne d'événements, vérification de hashs, lien de confirmation on‑chain (explorateur Avalanche), exports.
 8. **Suivi bénéficiaire** (M. Chen) — statut et ETA, sans détails internes.
 9. **Ops** — état des rails, incidents, kill switch, mode dégradé, budget d'alertes.
 
@@ -263,6 +276,8 @@ Direction artistique : minimaliste, propre, pixel‑perfect, micro‑animations 
 
 | Risque | Mitigation |
 |---|---|
+| Avalanche sur le chemin critique | écriture asynchrone, lecture seulement au règlement, mode dégradé F‑AVAX‑6 |
+| Données personnelles on‑chain | hashes et engagements uniquement, revue RGPD/PIPL des champs publiés |
 | Jev indisponible / quota | mode dégradé (NF‑2), cache des réponses sur le jeu de démo |
 | Jeu synthétique trop facile | neutralisation des raccourcis, ablations, honnêteté sur les limites |
 | Trop de périmètre pour 36 h | priorités P0/P1/P2 et ordre de coupe de `projet.md` §8 |
@@ -291,6 +306,7 @@ Relecture du PRD contre `projet.md` et contre l'objectif « vraie solution à un
 7. **Le bénéficiaire était oublié.** M. Chen n'avait ni parcours ni écran, alors que la vérification hors bande dépend de lui et qu'un paiement « bloqué » est sa peur principale. Ajouté : persona, écran de suivi (sans détails de sécurité), rôle dans la vérification.
 8. **Les KPI mélangeaient démo et promesse.** Corrigé : §1.3 distingue cible hackathon (mesurée sur le jeu d'évaluation) et cible 6 mois (pilotes) ; NF‑11 interdit tout chiffre non mesuré dans le pitch.
 9. **Le classifieur et Jev risquaient de juger la même chose.** Clarifié : le classifieur juge le *comportement* (historique du couple), Jev la *sémantique* (facture, intention, contexte) ; leur indépendance est ce qui rend le désaccord informatif.
-10. **Ce qui reste discutable** (assumé, pas corrigé) : (a) Jev reste un service hébergé externe sur le chemin critique — le cache de démo et le mode dégradé limitent le risque, mais une version auto‑hébergée du Système 1 serait préférable en production ; (b) les adaptateurs simulés rendent les KPI coût/délai illustratifs — seuls les KPI de sécurité (détournement, détection, faux positifs, latence) sont réellement mesurés sur le jeu ; (c) le registre de bénéficiaires a un cold start réel que les fixtures masquent ; (d) la valeur « layer++ » pour un PSP n'est pas démontrée en 36 h, seulement rendue crédible par l'interface `RailAdapter` et le mode ombre.
+10. **Avalanche était un bonus décoratif.** « Ancrer le journal » n'apportait rien que le hash‑chaînage ne fasse déjà pour un auditeur qui nous fait confiance. Corrigé : la chaîne sert à **confirmer** ce qui doit être vérifiable par des tiers qui ne nous font pas confiance — intentions, révocations, attestations de bénéficiaire (§4.9) — avec deux garde‑fous : hors chemin critique et sans données personnelles. Reste discutable : la lecture on‑chain par un PSP réel suppose qu'il accepte de l'intégrer ; en démo, seul l'adaptateur simulé le fait.
+11. **Ce qui reste discutable** (assumé, pas corrigé) : (a) Jev reste un service hébergé externe sur le chemin critique — le cache de démo et le mode dégradé limitent le risque, mais une version auto‑hébergée du Système 1 serait préférable en production ; (b) les adaptateurs simulés rendent les KPI coût/délai illustratifs — seuls les KPI de sécurité (détournement, détection, faux positifs, latence) sont réellement mesurés sur le jeu ; (c) le registre de bénéficiaires a un cold start réel que les fixtures masquent ; (d) la valeur « layer++ » pour un PSP n'est pas démontrée en 36 h, seulement rendue crédible par l'interface `RailAdapter` et le mode ombre.
 
 **Verdict** : le PRD est aligné avec `projet.md` (même principe directeur, mêmes sept composants, mêmes quatre flux, mêmes cibles), et il est honnête sur ce qui est simulé. Son point fort est que chaque exigence P0 a un critère d'acceptation testable et que les garanties annoncées au jury (§4.3 de `projet.md`) correspondent chacune à au moins une exigence : intention vérifiée dans chaque rail → F‑RAIL‑2 ; protection avant signature → F‑REG‑2 ; vérification transfrontalière → F‑REG‑2/4/5 ; routeur apprenant mais déterministe → F‑RTR‑1/4 ; deux juges + raisonneur + humain → F‑GRD‑3/4/5/6/7 ; conformité portable → F‑LOG‑4 ; journal infalsifiable → F‑LOG‑1/6.

@@ -100,12 +100,18 @@ Corollaires :
                                      │ événements normalisés
                   ┌──────────────────▼───────────────┐
                   │ 7. JOURNAL hash‑chaîné, VC,      │
-                  │ exports ISO 20022, KPI live,     │
-                  │ ancrage on‑chain (bonus)         │
+                  │ exports ISO 20022, KPI live      │
+                  └──────────────────┬───────────────┘
+                                     │ écriture asynchrone / lecture au règlement
+                  ┌──────────────────▼───────────────┐
+                  │ 8. REGISTRE DE CONFIRMATION      │
+                  │ (Avalanche) : intent_hash,       │
+                  │ révocation, attestation payee,   │
+                  │ racine du journal, escrow        │
                   └──────────────────────────────────┘
 ```
 
-### 4.2 Les sept composants
+### 4.2 Les huit composants
 
 **1. Intake & Intention.**
 La facture (PDF/image) est extraite en données structurées (vision Claude/Mistral, sorties Zod, score de confiance — brique existante dans Silkpay). Le formulaire est pré‑rempli ; **chaque champ porte sa provenance** (`invoice_pdf_email`, `verified_registry`, `user_input`, `psp_attestation`). Le donneur d'ordre signe :
@@ -186,7 +192,16 @@ Intercepte *chaque* geste : créer/modifier/exécuter une jambe, changer un para
 - **Donneur d'ordre (humain dans la boucle)** : notification hors bande avec l'explication → confirme / annule ; au‑dessus d'un seuil, **deux personnes** (multi‑signature). Kill switch sur le paiement et ses jambes.
 
 **7. Journal, conformité portable, mesure.**
-Chaque décision est un événement **hash‑chaîné** (qui, quoi, preuve, règle/question, score, explication). Racine ancrée périodiquement on‑chain (bonus Avalanche) : ni un initié ni l'opérateur de la plateforme ne peuvent réécrire l'historique (« Who audits the auditor ? », arXiv 2604.22096). Les contrôles effectués (KYB, AML, Travel Rule IVMS101, documents SAFE) sont émis comme **Verifiable Credentials** attachés à la route : chaque maillon les vérifie sans les refaire — c'est la réponse à « multiplication des contrôles ». Exports ISO 20022 (pain.001, camt.054) et rapport d'audit. **KPI live** : coût total %, délai, taux STP, fraudes bloquées, faux positifs, économies cumulées.
+Chaque décision est un événement **hash‑chaîné** (qui, quoi, preuve, règle/question, score, explication). Racine ancrée périodiquement dans le registre de confirmation (composant 8) : ni un initié ni l'opérateur de la plateforme ne peuvent réécrire l'historique (« Who audits the auditor ? », arXiv 2604.22096). Les contrôles effectués (KYB, AML, Travel Rule IVMS101, documents SAFE) sont émis comme **Verifiable Credentials** attachés à la route : chaque maillon les vérifie sans les refaire — c'est la réponse à « multiplication des contrôles ». Exports ISO 20022 (pain.001, camt.054) et rapport d'audit. **KPI live** : coût total %, délai, taux STP, fraudes bloquées, faux positifs, économies cumulées.
+
+**8. Registre de confirmation (Avalanche).**
+Un contrat sur Avalanche (C‑Chain ; Fuji pour la démo, sous‑réseau dédié envisageable) sert de **source de confirmation indépendante de la plateforme** : ce que nous affirmons, n'importe quel maillon peut le vérifier sans nous faire confiance.
+- *Intentions* : à la signature, `intent_hash`, payeur (identifiant haché), bénéficiaire (haché), montant plafond, devise et date limite sont publiés. Un rail, un PSP ou le fournisseur **confirme** qu'une jambe correspond à une intention existante avant d'exécuter ou d'accepter des fonds.
+- *Révocation / kill switch* : la révocation d'une intention est inscrite on‑chain ; tous les maillons la voient au même instant, y compris un adaptateur que nous ne contrôlons pas.
+- *Attestation de bénéficiaire* : le fournisseur (ou le PSP qui tient son compte) signe une attestation « ce compte m'appartient » dont le hash est ancré ; la vérification de bénéficiaire devient **vérifiable par n'importe qui**, pas seulement par nous — c'est l'extension transfrontalière de CoP/VoP sous une forme neutre.
+- *Journal* : racine de la chaîne de hashs publiée périodiquement.
+- *Escrow conditionnel* : le contrat `TradeEscrow` (existant) ne libère les fonds que s'il lit sur la chaîne « intention confirmée, non révoquée, bénéficiaire attesté, credentials présents » (policy wrapper, arXiv 2605.00071).
+Contraintes : écriture **asynchrone** (jamais sur le chemin critique de la garde : ~2 s de finalité Avalanche contre < 500 ms visés), lecture synchrone uniquement au moment du règlement d'une jambe ; **aucune donnée personnelle en clair** (hashes et engagements seulement, RGPD/PIPL) ; le système fonctionne si la chaîne est indisponible (mode dégradé : confirmation par notre API, signalé comme tel). Pourquoi Avalanche : finalité ~1–2 s, frais faibles, EVM (réutilisation de `TradeEscrow.sol` et de viem), sous‑réseaux permissionnés possibles pour un consortium de PSP.
 
 ### 4.3 Pourquoi cette architecture est innovante
 
@@ -197,6 +212,7 @@ Chaque décision est un événement **hash‑chaîné** (qui, quoi, preuve, règ
 5. **Deux juges indépendants + un raisonneur borné + un humain** — rapide (ms), calibré, explicable, et résistant à l'*approval fatigue* grâce au budget d'alertes.
 6. **Conformité portable en Verifiable Credentials** — compatible EUDI, interopérable par construction.
 7. **Journal infalsifiable qui couvre aussi le workflow d'approbation** — argument DORA / assureur.
+8. **Confirmation indépendante de la plateforme (Avalanche)** — intentions, révocations et attestations de bénéficiaire vérifiables par tout maillon sans nous faire confiance ; la vérification de bénéficiaire transfrontalière devient un bien commun, pas un silo de plus.
 
 ### 4.4 Pourquoi c'est plus rapide et moins cher
 
@@ -207,11 +223,11 @@ Chaque décision est un événement **hash‑chaîné** (qui, quoi, preuve, règ
 
 ## 5. Flux
 
-**Nominal.** Facture → extraction → bénéficiaire connu (12 paiements réussis, VC KYB valide) → intention signée → juridictions FR/CN → routeur : SEPA Inst → USDC → PSP CNY, choisi car vendredi 19 h à Paris et jambe CNY ouverte lundi 9 h ; escrow provisionné maintenant → garde : règles ✔, classifieur 0,03, Jev « geste ⊂ intention » 0,97 → exécution jambe par jambe, chaque adaptateur vérifie `intent_hash` + nonce → journal → notification « payé lundi 9 h 04, coût 0,9 %, 18 h ».
+**Nominal.** Facture → extraction → bénéficiaire connu (12 paiements réussis, VC KYB valide) → intention signée → juridictions FR/CN → routeur : SEPA Inst → USDC → PSP CNY, choisi car vendredi 19 h à Paris et jambe CNY ouverte lundi 9 h ; escrow provisionné maintenant → garde : règles ✔, classifieur 0,03, Jev « geste ⊂ intention » 0,97 → `intent_hash` publié sur Avalanche (asynchrone) → exécution jambe par jambe, chaque adaptateur vérifie `intent_hash` + nonce, le PSP CNY confirme l'intention sur la chaîne avant de créditer → journal → notification « payé lundi 9 h 04, coût 0,9 %, 18 h ».
 
 **Attaque BEC.** Facture modifiée reçue d'un domaine proche, nouvel IBAN → provenance = `invoice_pdf_email`, `first_seen` = aujourd'hui → **règle** : vérification hors bande obligatoire + time‑lock (avant signature) ; classifieur 0,81 ; Jev « correspond à l'historique ? » 0,12 → **retenu** → Mistral : explication → appel au numéro connu du fournisseur → le donneur d'ordre annule → le paiement repart vers le compte vérifié ; tout est dans le journal, exportable.
 
-**Substitution en transit.** Après signature, un adaptateur compromis ou une re‑tentative tente d'exécuter une jambe vers un autre compte → l'adaptateur aval refuse (`intent_hash` ≠, nonce consommé) → la garde détecte la dérive → kill switch sur la route → fallback vers un autre rail → alerte, preuve dans le journal.
+**Substitution en transit.** Après signature, un adaptateur compromis ou une re‑tentative tente d'exécuter une jambe vers un autre compte → l'adaptateur aval refuse (`intent_hash` ≠, nonce consommé, ou intention introuvable/révoquée dans le registre Avalanche) → la garde détecte la dérive → kill switch sur la route → fallback vers un autre rail → alerte, preuve dans le journal.
 
 **Défaillance de rail.** Le PSP CNY retourne les fonds → événement `returned` normalisé → re‑routage automatique (autre PSP ou pain.001 SWIFT) dans les bornes de l'intention → ETA mis à jour → aucune action humaine si le nouveau chemin respecte `max_total_cost_bps` et `latest_settlement`.
 
@@ -246,8 +262,8 @@ Chaque décision est un événement **hash‑chaîné** (qui, quoi, preuve, règ
 | H+6 → H+14 | Garde : règles + classifieur (features historiques) + banque de questions Jev + seuils/score cumulé ; Mistral sur retenus ; notification + confirmation donneur d'ordre ; journal hash‑chaîné | cœur |
 | H+14 → H+20 | Routeur : optimiseur (CVXPY existant) + prédicteurs en ligne (bandit) + horaires + fallback ; UI : intention, timeline multi‑rails, KPI live ; scène BEC et scène transit | cœur |
 | H+20 → H+26 | Jeu d'évaluation (AMLworld + APort), métriques, ablations ; exports ISO 20022 ; VC pour KYB/AML | 3ᵉ coupe |
-| H+26 → H+30 | Fractionnement multi‑rails ; profils NG/US ; un sandbox réel (Airwallex) | 2ᵉ coupe |
-| H+30 → H+34 | **Bonus** : policy wrapper on‑chain pour la jambe stablecoin, ancrage du journal (Avalanche Fuji) | 1ʳᵉ coupe |
+| H+26 → H+30 | Registre de confirmation Avalanche (Fuji) : publication `intent_hash` + révocation, lecture par les adaptateurs ; profils NG/US ; un sandbox réel (Airwallex) | 2ᵉ coupe |
+| H+30 → H+34 | **Bonus** : attestation de bénéficiaire ancrée, ancrage du journal, escrow conditionnel (policy wrapper), fractionnement multi‑rails | 1ʳᵉ coupe |
 | H+34 → H+36 | Pitch 3 min (une histoire, un chiffre), vidéo de secours | jamais coupé |
 
 Base de code : repartir de Silkpay (intake, quote engine/SOR, escrow, dashboard, i18n déjà là ≈ 60 % du routeur) en y ajoutant la couche garde et les adaptateurs ; à trancher avec l'équipe.
@@ -264,7 +280,8 @@ Base de code : repartir de Silkpay (intake, quote engine/SOR, escrow, dashboard,
 | « Le stablecoin est risqué/illégal chez moi » | `allow_crypto = false` : le routeur choisit un chemin fiat ; les profils de juridiction encodent la légalité (score CLEAR). |
 | « Le fraudeur contrôle déjà la boîte mail du payeur » | Provenance des champs + vérification hors bande sur un canal connu + time‑lock + dual control : la BEC classique échoue même si l'e‑mail est compromis. |
 | « Faux positifs, les PME vont désactiver » | Budget d'alertes adaptatif, score cumulé, features historiques : cible < 3 % de retenue, mesurée et publiée. |
-| « Et la preuve ? » | Journal hash‑chaîné couvrant décisions **et** approbations, ancré on‑chain, exports ISO 20022 et rapport d'audit. |
+| « Et la preuve ? » | Journal hash‑chaîné couvrant décisions **et** approbations, ancré sur Avalanche, exports ISO 20022 et rapport d'audit. |
+| « Pourquoi une blockchain ? » | Pas pour déplacer l'argent : pour que la confirmation d'une intention, sa révocation et l'attestation du bénéficiaire soient vérifiables par des maillons qui ne nous font pas confiance (PSP, fournisseur, auditeur). Hors chemin critique, sans données personnelles, le système tourne sans elle. |
 
 ---
 

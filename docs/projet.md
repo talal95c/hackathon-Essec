@@ -207,7 +207,7 @@ Règle : un paramètre **sensible** (IBAN, montant, destinataire, chemin de dép
 
 ### 3.6 Défense en profondeur : le mandat voyage avec la requête
 
-Le jeton Biscuit accompagne l'appel jusqu'au système aval. Un ERP, une API bancaire ou un serveur MCP partenaire **peut vérifier lui‑même** signature et caveats avant d'exécuter — comme un marchand vérifie un Cart Mandate AP2. Un agent qui contourne le proxy (shell, HTTP direct) n'a rien à présenter. Complété par : agent dans un conteneur à egress contrôlé, secrets injectés par la gateway (l'agent ne voit jamais la clé — pattern Token Vault ✅ / OneCLI).
+Le jeton Biscuit accompagne l'appel jusqu'au système aval. Un ERP, une API bancaire ou un serveur MCP partenaire **peut vérifier lui‑même** signature et caveats avant d'exécuter — comme un marchand vérifie un Cart Mandate AP2 (version on‑chain en bonus : §10 bis). Un agent qui contourne le proxy (shell, HTTP direct) n'a rien à présenter. Complété par : agent dans un conteneur à egress contrôlé, secrets injectés par la gateway (l'agent ne voit jamais la clé — pattern Token Vault ✅ / OneCLI).
 
 ### 3.7 Réponse graduée et kill switch
 
@@ -368,7 +368,7 @@ Choix recommandé : **Track 1, zone 3**, avec la scène MCP en ouverture. À vé
 
 **Jalons.** H+6 : un appel d'outil passe par le Runtime avec un mandat Biscuit et une règle. H+12 : provenance + Jev + hold humain sur la scène. H+20 : révocation en cascade, journal, alerte SOC. H+28 : bench et chiffres. H+32 : répétition, slides. H+36 : marge.
 
-**Ordre de coupe si ça déborde** : rapport DORA → copilote SOC génératif (garder l'alerte structurée) → agent rouge → ancrage on‑chain → scène d'ouverture MCP. **Ne jamais couper** : mandat → Runtime → règles + provenance + Jev → hold humain → révocation → journal, sur la scène facture piégée.
+**Ordre de coupe si ça déborde** : bonus Avalanche (§10 bis) → rapport DORA → copilote SOC génératif (garder l'alerte structurée) → agent rouge → scène d'ouverture MCP. **Ne jamais couper** : mandat → Runtime → règles + provenance + Jev → hold humain → révocation → journal, sur la scène facture piégée.
 
 ---
 
@@ -386,6 +386,38 @@ Choix recommandé : **Track 1, zone 3**, avec la scène MCP en ouverture. À vé
 
 ---
 
+## 10 bis. Bonus — les mandats sur Avalanche (hors cœur, après H+20)
+
+Clairement **bonus** : rien du cœur (§9) n'en dépend. Objectif : rendre l'existence, la filiation et la révocation des mandats **vérifiables par n'importe qui** sans nous faire confiance, et ancrer la preuve — ce qui parle à Team1/Avalanche et aux auditeurs.
+
+### Ce qui va sur la chaîne (et ce qui n'y va pas)
+
+| On‑chain (Avalanche Fuji en démo, un contrat Solidity ~100 lignes) | Off‑chain (inchangé) |
+|---|---|
+| `register(hash_mandat, principal, agent_id, parent_id, expire)` — **seulement le hash** du mandat, signé par le responsable ; jamais l'IBAN, les montants ni l'objectif (confidentialité) | Le contenu du mandat et le jeton Biscuit (runtime, hors ligne, gratuit) |
+| `delegate(parent_id, hash_sous_mandat)` — la chaîne d'autorité devient un arbre horodaté, infalsifiable | La vérification de chaque appel d'outil (règles, provenance, Jev : ~200 ms) |
+| `revoke(id)` — kill switch public ; révoquer la racine invalide toute la descendance ; tout système aval peut demander « ce mandat est‑il encore valide ? » | Le journal détaillé (hash‑chaîné) |
+| `anchorRoot(hash)` — ancrage périodique de la racine du journal → un auditeur prouve que l'historique n'a pas été réécrit | L'explication SOC et le rapport DORA |
+
+Le Runtime lit l'état on‑chain en lecture seule avec un cache court (~10 s).
+
+### Latence : la stratégie retenue (2 + 3 + 4)
+
+Une transaction coûte du gas et ~1–2 s de finalité sur la C‑Chain 🟡 ; mettre chaque appel d'outil on‑chain tuerait l'avantage de Jev (50 appels/tâche → +1–2 min). Options étudiées : L1 dédiée permissionnée (~1 s, validateurs choisis, mais lourde à monter en 36 h) ; **écriture asynchrone par lot** (latence ≈ 0 mais la chaîne prouve sans bloquer) ; **synchrone uniquement pour l'irréversible** ; **paiement on‑chain natif** (le wallet vérifie le mandat dans la même transaction) ; attestations hors chaîne + chaîne pour les litiges (type state channel, trop complexe en 36 h). Retenu :
+
+1. **Lecture et actions réversibles** : hors chaîne, cache court. Décisions signées écrites on‑chain **en arrière‑plan, par lot** (une tx par tâche ou par minute) → preuve immuable, coût ÷ 50, latence ajoutée ≈ 0.
+2. **Actions irréversibles** (paiement, export, suppression — déclarées dans le mandat) : attendre la confirmation on‑chain (1–2 s, invisible : un virement attend déjà une validation humaine ou un batch bancaire). Blocage incontournable là où l'argent part.
+3. **Paiement en stablecoin sur Avalanche** : un **smart‑contract wallet** consulte le registre avant d'exécuter — montant ≤ plafond, destinataire ∈ allowlist, mandat non révoqué — **dans la transaction de paiement elle‑même** : zéro latence ajoutée, et l'agent qui contourne notre proxy ne contourne pas le contrat (c'est le §3.6 version on‑chain).
+
+### Avantages / inconvénients
+
+- + Chaîne d'autorité et révocation vérifiables par des tiers ; preuve ancrée pour DORA/assureur ; enforcement incontournable pour les paiements on‑chain ; démo spectaculaire pour un jury Avalanche.
+- − Deux chemins (réversible/irréversible) à coder et à expliquer ; gestion des clés de signature et du faucet Fuji à préparer **avant** le hackathon ; ne couvre pas le virement SEPA classique (qui reste protégé par le Runtime + hold humain) ; en mode asynchrone la chaîne prouve mais n'empêche pas.
+
+### Effort et place dans le plan
+
+~4–6 h pour un rôle (A ou D) : contrat + déploiement Fuji + lecture depuis le Runtime + batch d'ancrage ; le wallet stablecoin seulement si le reste est stable. Déclenché après H+20, coupé en premier si le cœur prend du retard (§9). Roadmap : **L1 Avalanche permissionnée** dont les validateurs sont la banque, le régulateur et l'assureur — la chaîne *est* le consortium de confiance.
+
 ## 11. Roadmap (la dernière slide)
 
 1. Le refus qui enseigne (dans la démo).
@@ -393,7 +425,7 @@ Choix recommandé : **Track 1, zone 3**, avec la scène MCP en ouverture. À vé
 3. Score de dérive sur la trajectoire, explicable et calibré.
 4. Mandat vérifiable par le destinataire et mandats cross‑entreprises (mon agent acheteur ↔ ton agent vendeur).
 5. Fuzzing de chaque mandat par un agent rouge avant mise en production.
-6. La preuve comme produit : dossier d'incident pour auditeurs et assureurs, ancrage on‑chain.
+6. La preuve comme produit : dossier d'incident pour auditeurs et assureurs ; registre de mandats et ancrage sur Avalanche, puis L1 permissionnée « chaîne du consortium » (§10 bis).
 7. Souveraineté : copilote et juge on‑prem (Mistral poids ouverts ; déploiement entreprise du juge à négocier).
 
 ---

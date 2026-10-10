@@ -11,6 +11,7 @@
     "db:seed": "tsx --env-file=.env.local scripts/seed-db.ts"
   },
   "dependencies": {
+    "@pir/core": "workspace:*",
     "@anthropic-ai/sdk": "^0.91.1",
     "@hookform/resolvers": "^3.10.0",
     "@supabase/ssr": "^0.10.2",

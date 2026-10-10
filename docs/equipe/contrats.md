@@ -8,7 +8,7 @@
 Level = Literal["low", "medium", "high", "critical"]          # 0–39 / 40–69 / 70–89 / 90–100
 Provenance = Literal["typed", "registry", "pdf_email", "unknown"]
 
-class PaymentCommitment(BaseModel):      # = PaymentIntent, signé EIP-712 (brique C)
+class PaymentCommitment(BaseModel):      # signé EIP-712, type et mapping dans plan/blockchain.md §C1
     payment_id: str                      # bytes32 hex
     payer: str                           # adresse
     payee_id: str                        # réf. registre des bénéficiaires
@@ -18,7 +18,7 @@ class PaymentCommitment(BaseModel):      # = PaymentIntent, signé EIP-712 (briq
     invoice_hash: str
     provenance: dict[str, Provenance]    # par champ : account, amount, payee…
     corridor: str                        # "FR-GH"
-    nonce: int
+    nonce: str                           # bytes32 hex, usage unique
     valid_until: int                     # epoch s
     intent_hash: str                     # calculé par pir.chain.intent_hash()
     signature: str

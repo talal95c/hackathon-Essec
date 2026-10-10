@@ -1,0 +1,15 @@
+node_modules
+.next
+.turbo
+dist
+build
+out
+coverage
+apps/contracts/out
+apps/contracts/cache
+apps/contracts/lib
+services/**/.venv
+*.lock
+pnpm-lock.yaml
+apps/contracts/lib/
+node_modules/

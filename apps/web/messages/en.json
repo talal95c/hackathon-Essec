@@ -1,0 +1,338 @@
+{
+  "brand": {
+    "name": "PIR",
+    "tagline": "Pay China like it's next door."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "newTransaction": "New transaction",
+    "onboarding": "Onboarding"
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English",
+    "zh": "中文"
+  },
+  "landing": {
+    "hero": {
+      "title": "Pay China like it's next door.",
+      "subtitle": "T+0 settlement, programmable escrow, transparent comparison vs SWIFT — for Lagos ↔ Yiwu importers.",
+      "cta": "Calculate my savings",
+      "ctaSecondary": "Watch a demo"
+    },
+    "calculator": {
+      "title": "How much will I save?",
+      "amountLabel": "Order amount (USD)",
+      "amountPlaceholder": "30,000",
+      "swiftLabel": "Estimated SWIFT cost",
+      "pirLabel": "Cost with PIR",
+      "savingsLabel": "You save",
+      "swiftRate": "≈ 7.5% friction",
+      "pirRate": "≈ 1.8% friction (FX + platform + on/off-ramp)",
+      "perTransaction": "per transaction"
+    },
+    "valueProps": {
+      "title": "Why PIR",
+      "items": [
+        {
+          "title": "AI-first",
+          "body": "Upload the supplier quote — Claude Vision extracts HSC codes, parties, Incoterms in seconds."
+        },
+        {
+          "title": "Programmable escrow",
+          "body": "3-tranche smart contract on BNB Chain. The supplier only gets paid as BL is signed, inspection validated, delivery confirmed."
+        },
+        {
+          "title": "Multi-source SOR",
+          "body": "Convex optimizer routing your order across 3 liquidity sources to minimize total cost."
+        },
+        {
+          "title": "Bilingual from day one",
+          "body": "FR / EN / 中文 — UX tailored to Chinedu in Lagos AND Mr. Chen in Yiwu."
+        }
+      ]
+    }
+  },
+  "dashboard": {
+    "greeting": "Hello {name} 👋",
+    "subtitle": "Here's where your cross-border payments stand.",
+    "kpis": {
+      "totalSaved": "Saved vs SWIFT",
+      "totalInEscrow": "On-chain escrow",
+      "activeCount": "Active transactions",
+      "settledCount": "Settled"
+    },
+    "transactions": {
+      "title": "Recent transactions",
+      "new": "New transaction",
+      "empty": "No transactions yet. Start your first order.",
+      "unknownCounterparty": "Unknown counterparty",
+      "escrowBadge": "escrow",
+      "escrowDeployed": "Escrow contract deployed on Sepolia"
+    },
+    "status": {
+      "drafted": "Draft",
+      "kyb_pending": "KYB pending",
+      "quoted": "Quoted",
+      "awaiting_funding": "Awaiting funding",
+      "funded": "Funded · in progress",
+      "in_transit": "In transit",
+      "inspected": "Inspected",
+      "delivered": "Delivered",
+      "settling": "Settling",
+      "settled": "Settled",
+      "disputed": "Disputed",
+      "refunded": "Refunded",
+      "cancelled": "Cancelled"
+    }
+  },
+  "onboarding": {
+    "title": "KYB verification",
+    "subtitle": "A few minutes to confirm your business. Multiple providers in parallel.",
+    "step1": {
+      "title": "Business information",
+      "subtitle": "These details are verified against official registries (CAC Nigeria, Tianyancha China).",
+      "legalName": "Legal name",
+      "country": "Country",
+      "countries": {
+        "NG": "🇳🇬 Nigeria",
+        "CN": "🇨🇳 China"
+      },
+      "cacNumber": "CAC number (Nigeria)",
+      "bvn": "BVN",
+      "bvnHint": "Bank Verification Number — 11 digits",
+      "businessLicense": "Business license number"
+    },
+    "step2": {
+      "title": "Documents",
+      "subtitle": "Upload your supporting docs — encrypted at-rest in Supabase Vault.",
+      "cacCert": "CAC certificate",
+      "proofOfAddress": "Proof of address (utility bill or lease)",
+      "note": "These uploads are simulated in the hackathon demo — Supabase Storage will be wired in production."
+    },
+    "step3": {
+      "title": "Verification in progress",
+      "subtitle": "We're querying our providers in parallel. Watch the live status below."
+    },
+    "providers": {
+      "title": "Verification providers",
+      "smile_id": {
+        "label": "Smile ID",
+        "description": "KYC Nigeria + BVN ↔ ID photo match"
+      },
+      "comply_advantage": {
+        "label": "ComplyAdvantage",
+        "description": "Global sanctions + PEP screening"
+      },
+      "tianyancha": {
+        "label": "Tianyancha",
+        "description": "Chinese business registry (天眼查)"
+      },
+      "allApproved": "✓ All providers approved. Your account is ready to transact."
+    },
+    "cta": {
+      "next": "Next",
+      "previous": "Back",
+      "submit": "Run verification",
+      "dashboard": "Go to dashboard"
+    }
+  },
+  "intake": {
+    "step": "Step 1 / 4 · Read the supplier quote",
+    "title": "Upload the supplier quote",
+    "subtitle": "Claude Vision extracts HSC codes, parties, amounts, and Incoterms in seconds.",
+    "noKeyTitle": "Demo mode (no Anthropic key)",
+    "noKeyBody": "Add ANTHROPIC_API_KEY to apps/web/.env.local to run a real Claude Vision parse. Without a key, uploads will fail with an explicit error.",
+    "uploader": {
+      "drop": "Drop the supplier quote here (PDF, JPG, PNG)",
+      "formats": "PDF · JPEG · PNG · WebP — 8 MB max",
+      "parsing": "Extracting fields…",
+      "parsingHint": "Usually takes 5-10 seconds."
+    },
+    "stream": {
+      "title": "Claude Vision · AI agent in action",
+      "subtitle": "Reading the quote and structuring the fields",
+      "read": "Reading the document",
+      "parties": "Identifying seller and buyer",
+      "hsc": "Extracting HSC codes and line items",
+      "amounts": "Reading amounts, currency, and Incoterms",
+      "validate": "Validating and structuring"
+    },
+    "result": {
+      "title": "Quote parsed successfully",
+      "manualReview": "Confidence < 85% — manually verify fields before continuing.",
+      "invoiceNumber": "Invoice number",
+      "issuedDate": "Issued date",
+      "seller": "Seller",
+      "sellerCountry": "Seller country",
+      "buyer": "Buyer",
+      "buyerCountry": "Buyer country",
+      "currency": "Currency",
+      "totalAmount": "Total amount",
+      "incoterms": "Incoterms",
+      "paymentTerms": "Payment terms",
+      "lineItems": "Line items ({count})",
+      "uploadAnother": "Upload another",
+      "continueCta": "Continue to payment route"
+    }
+  },
+  "txDetail": {
+    "back": "Back to dashboard",
+    "unknownCounterparty": "Unknown counterparty",
+    "createdAt": "Created on {date}",
+    "proformaTitle": "Supplier quote",
+    "invoiceNumber": "Invoice #",
+    "totalAmount": "Amount",
+    "incoterms": "Incoterms",
+    "issuedDate": "Issued date"
+  },
+  "quote": {
+    "inputTitle": "Optimal payment route",
+    "fromProforma": "Quote: {amount}",
+    "amountLabel": "How much should the supplier receive? (USD)",
+    "amountHint": "Amount to deliver into USDT escrow — PIR computes how much NGN you pay.",
+    "autoQuoteHint": "Routing automatically toward minimum total cost from the quoted amount. No input required.",
+    "getQuote": "Run routing",
+    "fetching": "Fetching…",
+    "refresh": "Refresh routing",
+    "orchestrating": "Querying 3 sources in parallel + convex SOR solver",
+    "orchestratingHint": "Yellow Card · OTC #1 · OTC #2 · PSP USDT→CNY",
+    "escrowSectionHint": "↓ Next step : deploy the on-chain escrow below",
+    "stream": {
+      "title": "Smart Order Router ML · AI agent in action",
+      "subtitle": "XGBoost predicts per-source slippage · CVXPY solves the optimal allocation",
+      "yellowCard": "Fetching Yellow Card order book",
+      "otc1": "Quoting OTC Desk #1 (Binance OTC)",
+      "otc2": "Quoting OTC Desk #2 (Hashkey)",
+      "psp": "USDT→CNY off-ramp PSP rate (Onafriq)",
+      "loadModel": "Loading XGBoost model (trained on 200k P2P snapshots)",
+      "predictSlippage": "Predicting slippage per source (hour, depth, NGN volatility)",
+      "buildProblem": "Building the convex program (objective + constraints)",
+      "solve": "CVXPY CLARABEL solve — global optimum allocation",
+      "baselineCheck": "Safety check : compare vs greedy 60/40 baseline"
+    },
+    "why": {
+      "title": "Why this allocation?",
+      "subtitle": "Top features that drove the XGBoost slippage prediction.",
+      "feature": {
+        "size": "Order size relative to book depth",
+        "depth": "Top-5 book depth",
+        "spread": "Quoted bid/ask spread",
+        "hour": "Hour of day (Lagos)",
+        "dow": "Day of week",
+        "monthEnd": "Month-end approach (CBN cycle)",
+        "vol": "NGN/USDT 24h volatility",
+        "sourceYellowCard": "Source : Yellow Card",
+        "sourceOtc1": "Source : OTC Desk #1",
+        "sourceOtc2": "Source : OTC Desk #2"
+      }
+    },
+    "breakdown": {
+      "youPay": "You pay",
+      "usdtHeld": "USDT in escrow",
+      "supplierGets": "Supplier receives",
+      "savings": "You save",
+      "vsSwift": "vs SWIFT estimated at {swiftCost}",
+      "totalCost": "PIR total cost",
+      "eta": "T+0 settlement · ~{seconds}s",
+      "engineXgbCvxpy": "XGBoost + CVXPY",
+      "engineCvxpy": "CVXPY",
+      "engineGreedy": "Greedy fallback",
+      "breakdownToggle": "Cost breakdown",
+      "fxCost": "FX cost (spread + slippage)",
+      "platformFee": "Platform fee ({bps} bps)",
+      "offRamp": "USDT→CNY off-ramp (PSP)",
+      "networkFees": "On-chain network fees"
+    },
+    "sor": {
+      "title": "Smart Order Routing allocation",
+      "subtitle": "3 NGN→USDT sources, convex optimizer under constraints",
+      "totalCost": "Total cost",
+      "vsBaseline": "vs 60/40 baseline",
+      "engineXgbCvxpy": "XGBoost + CVXPY",
+      "engineCvxpy": "CVXPY ECOS",
+      "engineGreedy": "Greedy (fallback)"
+    }
+  },
+  "escrow": {
+    "title": "On-chain escrow · Sepolia testnet",
+    "subtitleFunded": "✓ {amount} held in escrow — released per tranche after attestation",
+    "subtitleNotFunded": "Contract deployed, awaiting funding",
+    "fundTitle": "Deploy + fund the escrow",
+    "fundDescription": "PIR deploys a fresh TradeEscrow contract on Sepolia testnet, mints mUSDT, and funds the contract with the quoted USDT amount. 3 on-chain transactions chained. (V1 prod: BNB Chain mainnet + USDT BEP-20.)",
+    "fundCta": "Deploy + fund the escrow",
+    "funding": "On-chain deployment in progress…",
+    "fundingSteps": "1/3 factory.create → 2/3 mUSDT.approve → 3/3 escrow.fund",
+    "fundedSuccess": "Escrow deployed and funded on Sepolia",
+    "stream": {
+      "title": "PIR · AI agent deploying the escrow",
+      "subtitle": "3 on-chain transactions chained on Sepolia testnet",
+      "compile": "Compiling TradeEscrow contract (Solidity 0.8.24)",
+      "deploy": "Deploying via the factory (factory.create)",
+      "mint": "Minting test mUSDT for the buyer",
+      "approve": "Approving the contract to pull funds (mUSDT.approve)",
+      "fund": "Funding the escrow on-chain (escrow.fund)",
+      "persist": "Persisting + revalidating dashboard"
+    },
+    "viewFundingTx": "View fund tx on Etherscan",
+    "loading": "Reading on-chain state…",
+    "readFailed": "Could not read contract state. Check the address + your Sepolia RPC.",
+    "waitForQuote": "Run the payment routing above before funding the escrow.",
+    "tranche": "Tranche {n} ({pct}%)",
+    "condition": {
+      "bl_signed": "Bill of Lading signed",
+      "inspection_certified": "CCIC inspection certified",
+      "delivery_acknowledged": "Delivery acknowledged"
+    },
+    "status": {
+      "pending": "Awaiting attestation",
+      "attested": "✓ Attested — claimable by supplier",
+      "released": "Released — USDT sent to supplier",
+      "refunded": "Refunded to buyer (timeout)",
+      "disputed": "In dispute"
+    },
+    "attest": "Attest (arbiter)",
+    "attesting": "Signing on-chain…",
+    "overdue": "Deadline passed — refundable",
+    "dueIn": "deadline {date}"
+  },
+  "timeline": {
+    "title": "Transaction journey",
+    "current": "In progress",
+    "phase": {
+      "drafted": "Document parsed",
+      "quoted": "Quote calculated",
+      "funded": "Escrow funded",
+      "in_transit": "In transit + inspection",
+      "settled": "Settled"
+    },
+    "phaseHint": {
+      "drafted": "Quote extracted by Claude Vision",
+      "quoted": "Routed across 3 NGN→USDT sources",
+      "funded": "USDT locked on-chain · 3 tranches",
+      "in_transit": "Bill of Lading · CCIC inspection · delivery",
+      "settled": "USDT released to the supplier"
+    },
+    "halted": {
+      "disputed": "Transaction in dispute — frozen until arbitration.",
+      "refunded": "Funds returned to buyer (timeout or dispute resolution).",
+      "cancelled": "Transaction cancelled before funding."
+    }
+  },
+  "auditLog": {
+    "title": "Audit log",
+    "empty": "No events recorded yet.",
+    "viewOnEtherscan": "View tx on Etherscan",
+    "event": {
+      "proforma_parsed": "Supplier quote parsed by Claude Vision",
+      "quote_calculated": "Quote calculated · 3-source SOR",
+      "escrow_funded": "Escrow deployed + funded on Sepolia",
+      "milestone_attested": "Milestone attested by arbiter",
+      "tranche_claimed": "Tranche claimed by supplier"
+    }
+  },
+  "footer": {
+    "phase0Notice": "Phase 0 — monorepo scaffolding. Features land in the following phases."
+  }
+}

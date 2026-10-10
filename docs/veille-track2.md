@@ -18,7 +18,7 @@ Les nombres d'étoiles GitHub ont été relevés le 10/10/2026 et évoluent vite
 2. La surface d'attaque n°1 qui « buzze » est la couche **outils/MCP**. Exemples : tool poisoning (Invariant 2025, Microsoft juin 2026), dizaines de CVE sur des serveurs MCP, injection indirecte qui mène à de l'exfiltration (EchoLeak, GitLost).
 3. Côté SOC, les mêmes douleurs persistent : volume d'alertes, confiance faible dans l'IA (hallucinations), agents inconnus ou sur‑privilégiés.
 4. Les startups YC 2025‑2026 se positionnent sur trois créneaux : **contrôle/PAM des agents** (Alter, Multifactor, Salus, Golf, ContextFort), **red‑teaming d'agents** (Fabraix) et **SOC agentique** (Cotool).
-5. Recommandation : la **Piste A, « MCP Sentinel »** (gateway MCP qui détecte le tool poisoning et pousse des alertes SOC sourcées) offre le meilleur ratio différenciation / faisabilité en 36 h. La **Piste B** (copilote SOC « zéro affirmation sans preuve ») est l'option sûre.
+5. Recommandation (mise à jour) : le projet **[MANDAT](projet-mandat.md)** fusionne les pistes A/B/C — gateway MCP + mandat par tâche jugé par Jev + copilote SOC à preuves + honeytokens — et vise 5/5 sur la grille. Les pistes A, B et C ci‑dessous restent les plans de repli.
 
 ---
 

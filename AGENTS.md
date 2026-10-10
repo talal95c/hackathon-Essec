@@ -1,5 +1,7 @@
 # AGENTS.md — Master Plan for PIR
 
+> **Hackathon (oct. 2026) — à lire d'abord** : le cadrage à jour est [`docs/prd-final.md`](docs/prd-final.md) et l'organisation de l'équipe est dans [`docs/equipe/`](docs/equipe/README.md). Quand ce fichier contredit le PRD final (corridor Lagos–Yiwu, BNB/USDT, Claude, Clerk…), **le PRD final fait foi**.
+
 ## Project Overview & Stack
 
 **App:** PIR — _"Pay China like it's next door."_

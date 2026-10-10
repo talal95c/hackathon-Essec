@@ -20,17 +20,17 @@ Permettre à une entreprise de payer n'importe quelle autre entreprise, partout 
 | KPI produit | Définition | Cible hackathon (jeu d'évaluation) | Cible 6 mois (pilotes) |
 |---|---|---|---|
 | **Taux de détournement** | paiements exécutés vers un bénéficiaire/montant ≠ intention signée / total | **0** sur le jeu d'attaque | 0 confirmé sur volume réel |
-| **Confirmations on‑chain** | intentions publiées et lues par un adaptateur avant règlement | 100 % des paiements de la démo, aucune donnée personnelle en clair | idem, sous‑réseau consortium à l'étude |
+| **Confirmations on‑chain** (P1) | intentions publiées et lues par un adaptateur avant règlement | 100 % des paiements de la démo si F‑AVAX‑1/2 livrés, aucune donnée personnelle en clair | idem, sous‑réseau consortium à l'étude |
 | **Détection des attaques** | scénarios d'attaque retenus ou bloqués / scénarios d'attaque | > 95 % | > 98 % |
 | **Faux positifs** | paiements légitimes retenus / paiements légitimes | < 3 % | < 2 %, budget d'alertes respecté |
 | **Coût total** | frais + spread FX + frais de rail, en % du montant | < 1 % sur le corridor démo | < 1,5 % moyenne, aucun corridor > 3 % (cible G20) |
 | **Délai de disponibilité** | signature → fonds disponibles chez le bénéficiaire | < 1 h rails ouverts ; provisionné 24/7 sinon | 75 % < 1 h |
-| **Latence de la garde** | p95 par geste, sans Mistral | < 500 ms | < 300 ms |
+| **Latence de la garde** | p95 par geste, sans Mistral | < 50 ms sans Jev ; < 1 s aux points Jev | < 500 ms aux points Jev |
 | **STP** | paiements sans intervention humaine ni re‑routage | > 90 % des légitimes | > 95 % |
 | **Extension** | ajout d'un pays | 1 fichier de profil, < 1 h | idem + sandbox réel < 1 semaine |
 
 ### 1.4 Objectif de la démo (3 min)
-Une PME française paie 48 000 $ à un fournisseur chinois un vendredi 19 h ; le routeur choisit SEPA → USDC → PSP CNY, provisionne maintenant, règle lundi 9 h ; une facture BEC avec nouvel IBAN est retenue en < 500 ms, expliquée par Mistral, refusée par le donneur d'ordre ; une substitution en transit est refusée par l'adaptateur ; le tableau de bord affiche coût 0,9 %, délai 18 h, 2 fraudes bloquées, 0 faux positif ; on ajoute le Nigeria en un fichier.
+Une PME française paie 48 000 $ à un fournisseur chinois un vendredi 19 h ; le routeur choisit SEPA → USDC → PSP CNY, provisionne maintenant, règle lundi 9 h ; une facture BEC avec nouvel IBAN est retenue en < 1 s, expliquée par Mistral, refusée par le donneur d'ordre ; une substitution en transit est refusée par l'adaptateur ; le tableau de bord affiche coût 0,9 %, délai 18 h, 2 fraudes bloquées, 0 faux positif ; on ajoute le Nigeria en un fichier.
 
 ---
 
@@ -136,14 +136,14 @@ Format : **ID** · priorité · *user story* · critères d'acceptation (CA).
 - **F‑RAIL‑4** · P0 · *Trois adaptateurs simulés réalistes.* CA : SEPA Inst (délai 10 s, horaires 24/7), stablecoin on/off‑ramp (slippage simulé, 24/7), PSP CNY (horaires lun–ven 9–17 CST, retour aléatoire paramétrable) ; webhooks normalisés ; clairement étiquetés « simulé » dans l'UI.
 - **F‑RAIL‑5** · P1 · *Export ISO 20022.* CA : `pain.001` par paiement, `camt.054` par événement de règlement, validés par schéma XSD.
 - **F‑RAIL‑6** · P1 · *Un rail réel en sandbox.* CA : un adaptateur branché sur un sandbox (Airwallex ou équivalent) exécute `quote` et `initiate` ; étiqueté « sandbox ».
-- **F‑RAIL‑7** · P2 · *Escrow on‑chain conditionnel.* CA : `TradeEscrow` ne libère les fonds que si le registre de confirmation (§4.9) indique intention confirmée, non révoquée, bénéficiaire attesté, credentials présents ; testnet uniquement.
+- **F‑RAIL‑7** · P2 · *Escrow on‑chain conditionnel.* CA : `TradeEscrow` ne libère les fonds que si le registre de confirmation (§4.10) indique intention confirmée, non révoquée, bénéficiaire attesté, credentials présents ; testnet uniquement.
 - **F‑RAIL‑8** · P2 · *Travel Rule sur la jambe crypto.* CA : message IVMS101 généré et attaché à la jambe.
 
 ### 4.6 Garde (Système 1 + Système 2)
 
 - **F‑GRD‑1** · P0 · *Chaque geste passe par la garde.* CA : création/modification/exécution de jambe, changement de paramètre, re‑routage ; aucun chemin de code ne contourne la garde (test : appel direct d'adaptateur sans décision → refus).
 - **F‑GRD‑2** · P0 · *Règles déterministes en premier, non contournables.* CA : plafonds, sanctions (liste simulée), allowlist, provenance non fiable sur paramètre sensible → vérification obligatoire, nouveau compte → time‑lock, seuil → dual control ; évaluées en < 5 ms ; une interdiction ne peut être levée par aucun modèle.
-- **F‑GRD‑3** · P0 · *Jev répond à une banque de questions fixes.* CA : ≥ 5 questions structurées (« geste ⊂ intention ? », « changement en transit anormal ? », « facture type BEC ? », « provenance fiable ? », « cohérent avec l'historique du couple ? ») ; réponse = probabilité calibrée ; p95 < 300 ms ; la question et la réponse sont journalisées.
+- **F‑GRD‑3** · P0 · *Jev répond à une banque de questions fixes.* CA : **3 questions P0** (« geste ⊂ intention ? », « cohérent avec l'historique du couple ? », « facture type BEC ? ») + 2 P1 (« changement en transit anormal ? », « provenance fiable ? ») ; **une question par appel** (les réponses d'un même appel ne sont pas indépendantes — constat LawHack), appels lancés **en parallèle** ; réponse = probabilité calibrée (`noul` = P(oui)) ; p95 < 1 s pour les 3 questions ; Jev n'est sollicité qu'à **deux points** (signature de l'intention ; création/modification de la jambe de règlement), pas à chaque geste ; question et réponse journalisées ; cache des réponses clé = hash des champs normalisés.
 - **F‑GRD‑4** · P0 · *Un classifieur comportemental indépendant.* CA : features d'historique (nouveauté bénéficiaire/compte, écart au montant habituel, cadence, heure, pays, délai facture→paiement, changement récent de coordonnées) ; GBM entraîné sur le jeu synthétique ; explications SHAP top‑3 ; < 10 ms.
 - **F‑GRD‑5** · P0 · *Décision graduée.* CA : score de risque cumulé (règles + classifieur + Jev) → `pass` / `hold` / `block` ; désaccord classifieur/Jev → `hold` ; seuils configurables ; décision et contributions affichées.
 - **F‑GRD‑6** · P0 · *Mistral explique les retenus.* CA : déclenché uniquement sur `hold` ; entrée = intention, facture, historique, décisions ; sortie = explication ≤ 120 mots en langue de l'utilisateur + recommandation ; aucune action possible depuis Mistral ; timeout 10 s → explication par défaut issue des règles/SHAP.
@@ -161,7 +161,7 @@ Format : **ID** · priorité · *user story* · critères d'acceptation (CA).
 - **F‑LOG‑5** · P1 · *Export d'audit.* CA : rapport PDF/JSON par paiement avec chaîne de hashs ; exports ISO 20022.
 - **F‑LOG‑6** · P2 · *Ancrage on‑chain.* CA : racine de la chaîne publiée périodiquement dans le registre de confirmation ; vérification depuis l'UI.
 
-### 4.9 Registre de confirmation (Avalanche)
+### 4.10 Registre de confirmation (Avalanche)
 
 Rôle : source de confirmation **indépendante de la plateforme** — un rail, un PSP, le fournisseur ou un auditeur vérifient une intention, sa révocation ou l'attestation d'un bénéficiaire sans nous faire confiance. Écriture asynchrone, lecture au règlement, hashes uniquement.
 
@@ -172,7 +172,15 @@ Rôle : source de confirmation **indépendante de la plateforme** — un rail, u
 - **F‑AVAX‑5** · P2 · *Ancrage du journal.* = F‑LOG‑6.
 - **F‑AVAX‑6** · P1 · *Mode dégradé sans chaîne.* CA : RPC indisponible → confirmation par notre API, bandeau « confirmation on‑chain indisponible », écriture rejouée dès retour ; aucune jambe débloquée par défaut.
 
-### 4.8 Évaluation
+### 4.8 Prérequis de plateforme (ajoutés par la revue de faisabilité)
+
+- **F‑AUTH‑1** · P0 · *Comptes et rôles.* CA : Supabase Auth ; rôles `payer_admin` (Claire), `approver` (Marc), `ops`, `auditor`, `payee` (M. Chen, accès par lien signé) ; RLS par entreprise ; une démo = 2 entreprises préconfigurées.
+- **F‑DATA‑1** · P0 · *Fixtures de démo.* CA : 2 entreprises (FR, NG en P1), 3 fournisseurs (CN connu avec 12 paiements historiques et compte vérifié ; CN nouveau ; US), 3 factures PDF (légitime connue, légitime nouveau fournisseur, BEC : domaine proche + nouvel IBAN autre pays), profils FR/CN, statistiques de rails initiales ; script `seed` idempotent.
+- **F‑DEMO‑1** · P0 · *Horloge pilotable.* CA : l'heure « système » de la démo est réglable (ex. vendredi 19:00 Europe/Paris) et avance à la demande ; horaires des rails, time‑locks, ETA et planification s'y réfèrent ; affichée dans l'UI avec mention « horloge de démo ».
+- **F‑DEMO‑2** · P0 · *Téléphone simulé.* CA : panneau « téléphone de Claire » (seconde fenêtre/colonne) qui reçoit les notifications hors bande et permet confirmer/annuler ; remplaçable par Twilio (P2) sans changer l'API de notification.
+- **F‑KEY‑1** · P0 · *Clé de signature du donneur d'ordre.* CA : paire de clés générée côté navigateur (WebCrypto, ECDSA P‑256) et stockée localement, clé publique enregistrée ; signature vérifiée côté serveur ; passkey/WebAuthn en P1.
+
+### 4.9 Évaluation
 
 - **F‑EVAL‑1** · P0 · *Jeu de scénarios.* CA : ≥ 300 scénarios (cible 500) : légitimes variés, BEC, substitution en transit, montants anormaux, replay/doublon, rails défaillants ; générés à partir d'AMLworld et d'attaques type APort ; raccourcis de simulateur identifiés et neutralisés (ex. : la fraude n'est pas corrélée à un seul champ).
 - **F‑EVAL‑2** · P0 · *Métriques publiées.* CA : détection, faux positifs, latence p95, coût, délai, STP, re‑routage ; un script reproduit les chiffres.
@@ -184,7 +192,7 @@ Rôle : source de confirmation **indépendante de la plateforme** — un rail, u
 
 | ID | Exigence | Critère |
 |---|---|---|
-| NF‑1 | Latence de la garde | p95 < 500 ms par geste hors Mistral ; Mistral hors chemin critique |
+| NF‑1 | Latence de la garde | règles + classifieur p95 < 50 ms sur chaque geste ; avec Jev (3 questions en parallèle, aux 2 points où il est appelé) p95 < 1 s ; Mistral hors chemin critique |
 | NF‑2 | Disponibilité dégradée | Fonctionne sans Jev, sans Mistral, sans chaîne ; jamais l'inverse ; aucun déblocage par défaut |
 | NF‑3 | Idempotence & cohérence | Toute opération externe est idempotente ; états de jambe monotones ; reprise après crash sans double exécution |
 | NF‑4 | Sécurité des clés | Clés de signature des donneurs d'ordre jamais côté serveur (passkey/WebAuthn ou KMS) ; clés d'adaptateurs en coffre ; rotation documentée |
@@ -240,7 +248,7 @@ Rôle : source de confirmation **indépendante de la plateforme** — un rail, u
 | Base de données | Supabase/Postgres (RLS) | réel |
 | Registre de confirmation `IntentRegistry` (intentions, révocations, attestations, racine du journal) | Avalanche Fuji, viem | testnet (P1 pour intentions/révocation, P2 attestations/ancrage) |
 | Escrow conditionnel `TradeEscrow` | Avalanche Fuji | testnet (P2) |
-| Notifications hors bande | push app + SMS (ou simulation visible) | simulé si pas de fournisseur |
+| Notifications hors bande | panneau « téléphone simulé » dans l'UI (F‑DEMO‑2) ; Twilio en P2 | simulé, étiqueté |
 
 ---
 
@@ -287,9 +295,10 @@ Direction artistique : minimaliste, propre, pixel‑perfect, micro‑animations 
 **Questions ouvertes**
 1. Base de code : repartir de Silkpay (intake, SOR, escrow, dashboard ≈ 60 % du routeur) ou de zéro dans `hackathon-Essec` ?
 2. Nom du produit.
-3. Fournisseur de notifications hors bande pour la démo (vrai SMS ou simulation visible) ?
+3. ~~Notifications hors bande~~ → tranché : téléphone simulé visible (F‑DEMO‑2), Twilio en P2.
 4. Sandbox PSP accessible en 36 h (Airwallex demande une validation) ?
-5. Clé de signature du donneur d'ordre : passkey navigateur (réaliste) ou clé gérée (plus simple) pour la démo ?
+5. ~~Clé de signature~~ → tranché : WebCrypto côté navigateur en P0, passkey en P1 (F‑KEY‑1).
+6. Taille de l'équipe (3 ou 4 ?) — conditionne la coupe des P0 (§12.2).
 
 ---
 
@@ -297,7 +306,7 @@ Direction artistique : minimaliste, propre, pixel‑perfect, micro‑animations 
 
 Relecture du PRD contre `projet.md` et contre l'objectif « vraie solution à une vraie douleur quantifiée ». Ce qui n'allait pas, et ce qui a été corrigé dans cette version :
 
-1. **Le PRD surchargeait les P0.** Première passe : 31 exigences P0, intenables en 36 h. Corrigé : dual control, fallback, prédicteurs en ligne, ISO 20022, VC, budget d'alertes, mode dégradé passés en P1 ; fractionnement, escrow policy wrapper, Travel Rule, honeytokens, ancrage, partage inter‑entreprises en P2. Il reste **28 P0**, ce qui est encore lourd : si le planning dérape, les premiers P0 à sacrifier sont F‑RTR‑3 (comparaison de 3 chemins → 2), F‑EVAL‑2 (métriques publiées → mesurées à la main), puis F‑GRD‑4 (classifieur → règles + Jev seulement, en le disant). Les P0 restants couvrent exactement les quatre flux de la démo et le jeu d'évaluation.
+1. **Le PRD surchargeait les P0.** Première passe : 31 exigences P0, intenables en 36 h. Corrigé : dual control, fallback, prédicteurs en ligne, ISO 20022, VC, budget d'alertes, mode dégradé passés en P1 ; fractionnement, escrow policy wrapper, Travel Rule, honeytokens, ancrage, partage inter‑entreprises en P2. Il reste **28 P0** (+ 5 prérequis P0 ajoutés par la revue de faisabilité §12 : auth, fixtures, horloge, téléphone simulé, clé — ce sont des fondations, pas du périmètre), ce qui est encore lourd : si le planning dérape, les premiers P0 à sacrifier sont F‑RTR‑3 (comparaison de 3 chemins → 2), F‑EVAL‑2 (métriques publiées → mesurées à la main), puis F‑GRD‑4 (classifieur → règles + Jev seulement, en le disant). Les P0 restants couvrent exactement les quatre flux de la démo et le jeu d'évaluation.
 2. **« Avertir » n'est pas « empêcher ».** F‑REG‑2 disait d'abord que la signature était possible avec un avertissement si la provenance était non fiable. Incohérent avec le principe directeur et avec la leçon AP2 (protéger *avant* signature). Corrigé : la signature est bloquée tant que la vérification hors bande n'est pas faite.
 3. **La notification de retenue par e‑mail aurait recréé la faille BEC.** Corrigé : F‑GRD‑7 impose un canal hors bande (app/SMS), jamais l'e‑mail.
 4. **Le mode dégradé pouvait être lu comme « on laisse passer ».** Corrigé : NF‑2 et F‑GRD‑9 précisent « aucun déblocage par défaut » ; dégradé = règles + classifieur + humain, plus strict, pas plus laxiste.
@@ -306,7 +315,99 @@ Relecture du PRD contre `projet.md` et contre l'objectif « vraie solution à un
 7. **Le bénéficiaire était oublié.** M. Chen n'avait ni parcours ni écran, alors que la vérification hors bande dépend de lui et qu'un paiement « bloqué » est sa peur principale. Ajouté : persona, écran de suivi (sans détails de sécurité), rôle dans la vérification.
 8. **Les KPI mélangeaient démo et promesse.** Corrigé : §1.3 distingue cible hackathon (mesurée sur le jeu d'évaluation) et cible 6 mois (pilotes) ; NF‑11 interdit tout chiffre non mesuré dans le pitch.
 9. **Le classifieur et Jev risquaient de juger la même chose.** Clarifié : le classifieur juge le *comportement* (historique du couple), Jev la *sémantique* (facture, intention, contexte) ; leur indépendance est ce qui rend le désaccord informatif.
-10. **Avalanche était un bonus décoratif.** « Ancrer le journal » n'apportait rien que le hash‑chaînage ne fasse déjà pour un auditeur qui nous fait confiance. Corrigé : la chaîne sert à **confirmer** ce qui doit être vérifiable par des tiers qui ne nous font pas confiance — intentions, révocations, attestations de bénéficiaire (§4.9) — avec deux garde‑fous : hors chemin critique et sans données personnelles. Reste discutable : la lecture on‑chain par un PSP réel suppose qu'il accepte de l'intégrer ; en démo, seul l'adaptateur simulé le fait.
+10. **Avalanche était un bonus décoratif.** « Ancrer le journal » n'apportait rien que le hash‑chaînage ne fasse déjà pour un auditeur qui nous fait confiance. Corrigé : la chaîne sert à **confirmer** ce qui doit être vérifiable par des tiers qui ne nous font pas confiance — intentions, révocations, attestations de bénéficiaire (§4.10) — avec deux garde‑fous : hors chemin critique et sans données personnelles. Reste discutable : la lecture on‑chain par un PSP réel suppose qu'il accepte de l'intégrer ; en démo, seul l'adaptateur simulé le fait.
 11. **Ce qui reste discutable** (assumé, pas corrigé) : (a) Jev reste un service hébergé externe sur le chemin critique — le cache de démo et le mode dégradé limitent le risque, mais une version auto‑hébergée du Système 1 serait préférable en production ; (b) les adaptateurs simulés rendent les KPI coût/délai illustratifs — seuls les KPI de sécurité (détournement, détection, faux positifs, latence) sont réellement mesurés sur le jeu ; (c) le registre de bénéficiaires a un cold start réel que les fixtures masquent ; (d) la valeur « layer++ » pour un PSP n'est pas démontrée en 36 h, seulement rendue crédible par l'interface `RailAdapter` et le mode ombre.
 
-**Verdict** : le PRD est aligné avec `projet.md` (même principe directeur, mêmes sept composants, mêmes quatre flux, mêmes cibles), et il est honnête sur ce qui est simulé. Son point fort est que chaque exigence P0 a un critère d'acceptation testable et que les garanties annoncées au jury (§4.3 de `projet.md`) correspondent chacune à au moins une exigence : intention vérifiée dans chaque rail → F‑RAIL‑2 ; protection avant signature → F‑REG‑2 ; vérification transfrontalière → F‑REG‑2/4/5 ; routeur apprenant mais déterministe → F‑RTR‑1/4 ; deux juges + raisonneur + humain → F‑GRD‑3/4/5/6/7 ; conformité portable → F‑LOG‑4 ; journal infalsifiable → F‑LOG‑1/6.
+**Verdict** : le PRD est aligné avec `projet.md` (même principe directeur, mêmes huit composants, mêmes quatre flux, mêmes cibles), et il est honnête sur ce qui est simulé. Son point fort est que chaque exigence P0 a un critère d'acceptation testable et que les garanties annoncées au jury (§4.3 de `projet.md`) correspondent chacune à au moins une exigence : intention vérifiée dans chaque rail → F‑RAIL‑2 ; protection avant signature → F‑REG‑2 ; vérification transfrontalière → F‑REG‑2/4/5 ; routeur apprenant mais déterministe → F‑RTR‑1/4 ; deux juges + raisonneur + humain → F‑GRD‑3/4/5/6/7 ; conformité portable → F‑LOG‑4 ; journal infalsifiable → F‑LOG‑1/6.
+
+
+---
+
+## 12. Revue de faisabilité et kit de démarrage (v1.1)
+
+Relecture complète avec trois questions : le PRD est‑il complet ? est‑il faisable en 36 h ? qu'est‑ce qu'il faut concrètement pour démarrer à H+0 ?
+
+### 12.1 Complétude — trous trouvés et corrigés dans cette version
+
+| Trou | Correction |
+|---|---|
+| Aucune exigence sur les comptes, rôles et cloisonnement des données (6 personas, 0 exigence d'authentification) | **F‑AUTH‑1** (Supabase Auth, 5 rôles, RLS) |
+| Les parcours supposent « 12 paiements historiques », une facture BEC, des profils… sans exigence qui les produise | **F‑DATA‑1** (fixtures + `seed` idempotent) |
+| La démo se passe « vendredi 19 h » mais rien ne permet de régler l'heure ni d'avancer jusqu'à lundi 9 h | **F‑DEMO‑1** (horloge pilotable) — sans elle, le flux nominal n'est pas démontrable |
+| La notification hors bande était « app/SMS » sans décision ni exigence | **F‑DEMO‑2** (téléphone simulé visible), Twilio en P2 |
+| La clé de signature restait une question ouverte alors que F‑INT‑4 en dépend dès H+0 | **F‑KEY‑1** tranché (WebCrypto P0, passkey P1) |
+| F‑GRD‑3 demandait « ≥ 5 questions » Jev « à chaque geste » en « < 300 ms » — incompatible avec ce qu'on sait de Jev (LawHack) : réponses d'un même appel non indépendantes → une question par appel ; ~400–500 ms par appel ; quota **60 req/min** partagé avec la démo | F‑GRD‑3 et NF‑1 réécrits : 3 questions P0 en parallèle, à 2 points seulement, p95 < 1 s, cache ; latence « < 50 ms » réservée à règles + classifieur |
+| KPI « confirmations on‑chain 100 % » présenté comme hackathon alors que F‑AVAX est P1 | KPI marqué (P1) et conditionné |
+| Ordre des dépendances implicite : le classifieur (F‑GRD‑4) ne peut pas être entraîné avant le générateur de scénarios (F‑EVAL‑1) ; les adaptateurs ne peuvent pas vérifier `intent_hash` avant que le format canonique de l'intention soit figé | Chemin critique explicité en §12.3 |
+
+Ce qui est volontairement laissé hors PRD (roadmap) : API publique *layer++* documentée (OpenAPI), facturation, multi‑entités, réconciliation comptable, rappel/litige complets, Travel Rule réelle, sandbox PSP réel si Airwallex ne valide pas le compte à temps.
+
+### 12.2 Faisabilité — charge estimée des P0
+
+Estimation en heures‑personne (h·p), hypothèse : fork de Silkpay (intake, quote/SOR, escrow, dashboard, i18n, Supabase déjà là).
+
+| Bloc | Exigences | h·p | Réutilise Silkpay |
+|---|---|---|---|
+| Fondations | F‑AUTH‑1, F‑DATA‑1, F‑DEMO‑1/2, F‑KEY‑1 | 14 | Auth, schéma, seed existants |
+| Intention | F‑INT‑1…4 | 12 | intake vision + Zod existants |
+| Registre | F‑REG‑1…3 | 8 | table KYB existante |
+| Juridictions | F‑JUR‑1/2 | 6 | — |
+| Routeur | F‑RTR‑1/2/3 | 12 | SOR CVXPY existant (ajouter graphe, horaires) |
+| Adaptateurs | F‑RAIL‑1…4 | 16 | sources/quote existants (ajouter `initiate/status/webhook`, vérif. `intent_hash`) |
+| Garde | F‑GRD‑1…7 | 24 | — (Jev SDK, Mistral, GBM) |
+| Journal & KPI | F‑LOG‑1…3 | 10 | dashboard/timeline existants |
+| Évaluation | F‑EVAL‑1/2 | 10 | — |
+| UI (9 écrans, DA Silkpay) | transverse | 16 | layout, composants |
+| Pitch, vidéo, intégration continue | transverse | 6 | — |
+| **Total P0** | | **≈ 134 h·p** | |
+
+Lecture : à **4 personnes × ~30 h effectives** (≈ 120 h·p), les P0 passent *tout juste* en appliquant la coupe annoncée (§11.1 : F‑RTR‑3 → 2 chemins, F‑EVAL‑2 à la main, F‑GRD‑4 en dernier recours) ; les P1 Avalanche (F‑AVAX‑1/2/3, ≈ 10 h·p : contrat `IntentRegistry` ~80 lignes + tests Foundry + lecture viem) sont atteignables si une personne les prend en parallèle dès H+14. À **3 personnes** (≈ 90 h·p), il faut couper d'emblée : F‑GRD‑4 (classifieur) remplacé par 2 règles comportementales déterministes (écart au montant habituel, nouveauté), F‑RTR‑3 à 2 chemins, F‑LOG‑3 réduit à 4 KPI, F‑REG‑3 time‑lock affiché mais non planifié, et Avalanche limité à F‑AVAX‑1 (publication) sans lecture par l'adaptateur. **Sans fork de Silkpay** (de zéro), ajouter ≈ 40 h·p : non faisable à moins de 5 personnes.
+
+Dépendances externes et leur risque :
+
+| Dépendance | Risque | Parade |
+|---|---|---|
+| Clé Codiv/TypeSafe (Jev, `openjev-latest`), quota 60 req/min | **élevé** : partagé entre démo, dev et évaluation ; une évaluation à plein régime casse la démo (vécu LawHack) | cache des réponses ; évaluation lancée **séquentiellement, la nuit, ≤ 25 req/min** ; mode dégradé F‑GRD‑9 ; ne jamais lancer deux jobs Jev en même temps |
+| Clé Mistral | moyen : 429 à concurrence ≥ 3, clés qui expirent | un appel à la fois, backoff, explication de repli (règles + SHAP) |
+| Clé Anthropic ou Mistral vision (extraction de facture) | faible | 3 factures de démo pré‑extraites en fixtures si l'API tombe |
+| Avalanche Fuji (RPC public + faucet) | faible : faucet parfois lent | demander les AVAX de test à H+0 ; RPC de secours |
+| Airwallex sandbox | **élevé** : validation de compte non garantie en 36 h | reste P1 ; adaptateur simulé étiqueté |
+| Docker + Supabase local | faible | déjà éprouvé sur Silkpay |
+
+### 12.3 Chemin critique (ce qui doit être figé en premier)
+
+1. **H+0 → H+2** : format canonique de `PaymentIntent` (champs, canonicalisation JSON, `intent_hash` = SHA‑256), `PaymentLeg`, `GuardDecision`, `LedgerEvent` — figés dans un paquet `core` partagé ; tout le monde dépend de ça.
+2. **H+2 → H+6** : fixtures + horloge de démo + auth ; squelette des 3 adaptateurs avec `initiate` qui vérifie `intent_hash` (test rouge → vert).
+3. **H+6 → H+10** : générateur de scénarios (F‑EVAL‑1) **avant** le classifieur ; banque de questions Jev et client (une question par appel) ; règles.
+4. **H+10 → H+20** : routeur (graphe + horaires), garde assemblée, écrans Nouvelle demande / Chemin / Timeline / Retenue, Mistral.
+5. **H+20 → H+26** : jeu d'évaluation complet, KPI, scène BEC et scène transit répétées ; en parallèle `IntentRegistry` sur Fuji.
+6. **H+26 → H+34** : P1 (fallback, profils NG/US, ISO 20022, lecture on‑chain par l'adaptateur), polish UI, vidéo de secours à H+34.
+
+### 12.4 Kit de démarrage — tout ce qu'il faut pour se mettre en marche
+
+**Décision recommandée : forker Silkpay** dans `hackathon-Essec` (sous‑dossier ou racine), garder son monorepo pnpm/turbo + Supabase + SOR + contrats Foundry, et y ajouter `packages/core` (types + hash + signature), `apps/web/src/lib/guard`, `apps/web/src/lib/rails`, `apps/web/src/lib/jurisdictions`, `services/eval`. Repartir de zéro coûte ≈ 40 h·p de plus pour réécrire ce qui existe.
+
+**Outils (vérifiés sur Silkpay)** : Node 22 + pnpm 10, Python 3.11 (venv pour le SOR : CVXPY, XGBoost, FastAPI), Docker (Supabase local), Foundry (`forge`) pour les contrats, Git. Commandes : `pnpm install`, `supabase start`, `pnpm dev` (web :3000), `pnpm sor:dev` (:8000), `pnpm test:sor`, `pnpm test:contracts`.
+
+**Comptes et clés à obtenir avant H+0** (dans `apps/web/.env.local`, jamais commités) :
+
+| Variable | Usage | Qui / où |
+|---|---|---|
+| `TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL=https://api.codiv.ai`, `SYSTEM_ONE_MODEL=openjev-latest` | Jev (Système 1) | clé Codiv existante (LawHack) — vérifier le quota |
+| `MISTRAL_API_KEY` | Système 2 + extraction de facture (repli) | console Mistral |
+| `ANTHROPIC_API_KEY` (optionnel) | extraction de facture (vision) | déjà prévu dans Silkpay |
+| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`… | base, auth, storage | `supabase start` les affiche |
+| `AVALANCHE_FUJI_RPC`, `DEPLOYER_PRIVATE_KEY` (compte de test uniquement), adresses `IntentRegistry`/`TradeEscrow` | registre de confirmation, escrow | wallet neuf + faucet Fuji ; remplacer `sepolia` par `avalancheFuji` dans `lib/escrow/client.ts` |
+| `AIRWALLEX_*` (optionnel, P1) | sandbox PSP | demande de compte dès maintenant |
+
+**Données à préparer** (F‑DATA‑1) : 3 factures PDF (dont la BEC avec domaine proche et IBAN d'un autre pays), logos/identités des 2 entreprises et 3 fournisseurs, 12 paiements historiques, profils FR/CN (horaires, plafonds, rails), grille de prix de référence (Wise, SWIFT) sourcée pour la comparaison affichée.
+
+**Équipe (4 personnes recommandé)** : (A) *core + garde* — types, hash/signature, règles, Jev, Mistral, décision ; (B) *routeur + adaptateurs* — graphe/horaires sur le SOR, 3 adaptateurs, vérification `intent_hash`/nonce, fallback ; (C) *front* — 9 écrans sur la DA Silkpay, horloge de démo, téléphone simulé, KPI ; (D) *données, évaluation, chaîne* — fixtures, générateur de scénarios, classifieur, métriques, `IntentRegistry` sur Fuji, pitch et vidéo. À 3 : D est réparti entre A (évaluation) et B (chaîne), et la coupe §12.2 s'applique d'emblée.
+
+**Conventions** : une branche par personne, merge dans `main` toutes les 3 h via PR courte ; tout ce qui est simulé porte un badge « simulé » dans l'UI et un préfixe `Mock` dans le code ; aucun chiffre dans le pitch sans ligne dans `services/eval` ou source dans `projet.md` ; démo répétée à H+20, H+28, H+34.
+
+**Checklist H+0 (30 min)** : fork + `pnpm install` + `supabase start` OK sur 4 machines · clés dans `.env.local` · appel Jev de test (1 question) et appel Mistral de test OK · wallet Fuji financé · `packages/core` créé avec `intentHash()` et un test · tableau des P0 affiché avec propriétaires · horloge de démo sur « vendredi 19:00 Europe/Paris ».
+
+### 12.5 Verdict
+
+**Complet** après cette passe : chaque parcours a ses exigences, chaque exigence P0 un critère testable, chaque dépendance une parade. **Faisable** à 4 personnes avec fork de Silkpay et la coupe prévue ; **tendu** à 3 ; **non faisable** de zéro. Le point qui conditionne tout est le quota Jev : si la clé Codiv n'est pas confirmée avant H+0, la garde doit être conçue dès le départ pour tourner en mode dégradé (règles + classifieur + humain) et Jev branché ensuite — ce que le principe directeur impose de toute façon.
